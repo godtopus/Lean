@@ -6,10 +6,10 @@
     // two predefined environments, 'backtesting' and 'live', feel free
     // to add more!
 
-    "environment": "backtesting", // "live-paper", "backtesting", "live-interactive", "live-interactive-iqfeed"
+    "environment": "backtesting-desktop", // "live-paper", "backtesting", "live-interactive", "live-interactive-iqfeed"
 
     // algorithm class selector
-    "algorithm-type-name": "BasicTemplateFrameworkAlgorithm",
+    "algorithm-type-name": "SVMStrategy",
 
     // Algorithm language selector - options CSharp, FSharp, VisualBasic, Python, Java
     "algorithm-language": "CSharp",
@@ -34,7 +34,8 @@
     "api-handler": "QuantConnect.Api.Api",
     "map-file-provider": "QuantConnect.Data.Auxiliary.LocalDiskMapFileProvider",
     "factor-file-provider": "QuantConnect.Data.Auxiliary.LocalDiskFactorFileProvider",
-    "data-provider": "QuantConnect.Lean.Engine.DataFeeds.DefaultDataProvider",
+    //"data-provider": "QuantConnect.Lean.Engine.DataFeeds.DefaultDataProvider",
+	"data-provider": "QuantConnect.Lean.Engine.DataFeeds.ApiDataProvider",
     "alpha-handler": "QuantConnect.Lean.Engine.Alphas.DefaultAlphaHandler",
 
     // limits on number of symbols to allow
@@ -50,8 +51,8 @@
     "transaction-log": "",
 
     // To get your api access token go to quantconnect.com/account
-    "job-user-id": "0",
-    "api-access-token": "",
+    "job-user-id": "20296",
+    "api-access-token": "a586cb9d7d41ada5b6380dd72e147a7c",
 
     // live data configuration
     "live-data-url": "ws://www.quantconnect.com/api/v2/live/data/",
@@ -236,7 +237,7 @@
             "messaging-handler": "QuantConnect.Messaging.StreamingMessageHandler",
             "log-handler": "QuantConnect.Logging.QueueLogHandler",
             "desktop-http-port": "1234",
-            "desktop-exe": "../../../UserInterface/bin/Debug/QuantConnect.Views.exe"
+            "desktop-exe": "../../../UserInterface/bin/Release/QuantConnect.Views.exe"
         },
 
         // defines the 'live-desktop' environment
