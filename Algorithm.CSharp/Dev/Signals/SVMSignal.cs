@@ -59,7 +59,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                     //Console.WriteLine("{0}, {1}, {2}", filtered.Count(), _rolling.Count(), _stoch.Current.Value);
 
-                    var inputs = new double[] { (double) (args.Value - _stoch.Current.Value), filtered.Count(), filtered.Average() };
+                    var inputs = new double[] { (double) (args.Value / _stoch.Current.Value), filtered.Count(), filtered.Average() };
                     _inputs.Add(inputs);
                     inputs = Accord.Statistics.Tools.ZScores(_inputs.ToArray()).Last();
                     _inputs.RemoveAt(_inputs.Count - 1);
@@ -67,9 +67,9 @@ namespace QuantConnect.Algorithm.CSharp
                     int prediction = _svm.Decide(inputs);
                     var probability = _svm.Probability(inputs);
 
-                    var dbnPredictions = _dbn.Compute(inputs);
+                    /*var dbnPredictions = _dbn.Compute(inputs);
                     var shortPrediction = dbnPredictions.First();
-                    var longPrediction = dbnPredictions.Last();
+                    var longPrediction = dbnPredictions.Last();*/
 
                     if (_securityHolding.Invested && Signal == SignalType.Long && prediction == 0)
                     {
@@ -81,11 +81,14 @@ namespace QuantConnect.Algorithm.CSharp
 
                     if (false)
                     {
-                        Console.WriteLine("Time: {0} Prediction: {1} Probability: {2} Long Prediction: {3} Short Prediction: {4}", args.EndTime, prediction, probability, longPrediction, shortPrediction);
+                        //Console.WriteLine("Time: {0} Prediction: {1} Probability: {2} Long Prediction: {3} Short Prediction: {4}", args.EndTime, prediction, probability, longPrediction, shortPrediction);
                     }
 
                     // EURUSD 0.9999
-                    var probabilityFilter = probability > 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
+                    var probabilityFilter = probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
+
+                    var longExit = Signal == SignalType.Long && prediction == 0;
+                    var shortExit = Signal == SignalType.Short && prediction == 1;
 
                     /*if (!_securityHolding.Invested && probabilityFilter && prediction == 1)
                     {
@@ -99,15 +102,15 @@ namespace QuantConnect.Algorithm.CSharp
                     {
                         Signal = SignalType.Exit;
                     }*/
-                    if (!_securityHolding.Invested && prediction == 1 && longPrediction == 1)
+                    if (!_securityHolding.Invested && probabilityFilter && prediction == 1)
                     {
                         Signal = Signal != SignalType.PendingLong ? SignalType.PendingLong : SignalType.Long;
                     }
-                    else if (!_securityHolding.Invested && prediction == 0 && shortPrediction == 1)
+                    else if (!_securityHolding.Invested && probabilityFilter && prediction == 0)
                     {
                         Signal = Signal != SignalType.PendingShort ? SignalType.PendingShort : SignalType.Short;
                     }
-                    else if ((_securityHolding.Invested && prediction == 1 && Signal == SignalType.Short) || (_securityHolding.Invested && prediction == 0 && Signal == SignalType.Long))
+                    else if ((_securityHolding.Invested && longExit) || (_securityHolding.Invested && shortExit))
                     {
                         Signal = SignalType.Exit;
                     }
@@ -208,7 +211,7 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 Learner = (param) => new SequentialMinimalOptimization<Gaussian<Polynomial>>()
                 {
-                    Complexity = 0.2,
+                    Complexity = 0.4,
                     Tolerance = 0.001,
                     Epsilon = 0.000001,
                     Kernel = new Gaussian<Polynomial>(new Polynomial(degree: 3), sigma: 4.2), //new Additive(new Gaussian(0.01)),
@@ -220,7 +223,7 @@ namespace QuantConnect.Algorithm.CSharp
 
             //teacher.ParallelOptions.MaxDegreeOfParallelism = 4;
 
-            _svm = teacher.Learn(trainingInputs, trainingOutputs);
+            _svm = teacher.Learn(trainingInputs, trainingOutputs, trainingWeights);
 
             var calibrationInputs = sellSamples.Skip(trainingSamples / 2)
                                                .Take(calibrationSamples / 2)

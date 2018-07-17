@@ -15,7 +15,7 @@ namespace QuantConnect.Algorithm.CSharp
 {
     public class SVMStrategy : QCAlgorithm, IRequiredOrderMethods
     {
-        public string[] Forex = { /*"NZDUSD", "EURUSD", "AUDUSD",*/ "GBPUSD", /*"EURGBP", "EURCHF", "AUDUSD", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
+        public string[] Forex = { /*"NZDUSD",*/ "EURUSD"/*, "AUDUSD",*/ /*"GBPUSD", "EURGBP", "EURCHF", "AUDUSD", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
 
         public IEnumerable<string> Symbols => Forex;
 
@@ -81,7 +81,7 @@ namespace QuantConnect.Algorithm.CSharp
                 RegisterIndicator(symbol, stochT, consolidatorT);
                 SubscriptionManager.AddConsolidator(symbol, consolidatorT);
 
-                var historyT = History<QuoteBar>(symbol, TimeSpan.FromDays(1000), trainingResolution);
+                var historyT = History<QuoteBar>(symbol, TimeSpan.FromDays(500), trainingResolution);
 
                 var quoteBars = new List<QuoteBar>();
                 var stochs = new List<double>();
@@ -145,7 +145,7 @@ namespace QuantConnect.Algorithm.CSharp
                         var current = quoteBars[j];
                         if (current.High >= longTarget && current.Low > longStop && longSetup)
                         {
-                            inputs.Add(new double[] { stochAverage[i] - stochs[i], stochCount[i], stochAverage[i] });
+                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i], stochAverage[i] });
                             outputs.Add(1);
 
                             var profit = current.High - quoteBars[i].Close;
@@ -153,14 +153,14 @@ namespace QuantConnect.Algorithm.CSharp
                             {
 
                             }*/
-                            weights.Add((double) profit);
+                            weights.Add((double) (1m - (30m / 10000m) / profit));
 
                             //i = j;
                             break;
                         }
                         else if (current.Low <= shortTarget && current.High < shortStop && shortSetup)
                         {
-                            inputs.Add(new double[] { stochAverage[i] - stochs[i], stochCount[i], stochAverage[i] });
+                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i], stochAverage[i] });
                             outputs.Add(0);
 
                             var profit = quoteBars[i].Close - current.Low;
@@ -168,7 +168,7 @@ namespace QuantConnect.Algorithm.CSharp
                             {
 
                             }*/
-                            weights.Add((double)profit);
+                            weights.Add((double) (1m - (30m / 10000m) / profit));
                             //i = j;
                             break;
                         }
@@ -238,7 +238,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                 var signal = new SVMSignal(consolidator, stoch, stochMA, rolling, Portfolio[symbol]);
                 signal.TrainSVM(inputs, outputs, weights);
-                signal.TrainNN(inputs, outputs, weights);
+                //signal.TrainNN(inputs, outputs, weights);
 
                 Securities[symbol].VolatilityModel = new AverageTrueRangeVolatilityModel(std);
                 _tradingAssets.Add(symbol,
