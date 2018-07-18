@@ -174,6 +174,8 @@ namespace QuantConnect.Algorithm.CSharp
                         }
                         else if ((current.Low <= longStop && longSetup) || (current.High >= shortStop && shortSetup))
                         {
+                            //inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i], stochAverage[i] });
+                            //outputs.Add(2);
                             //i = j;
                             break;
                         }
@@ -192,7 +194,7 @@ namespace QuantConnect.Algorithm.CSharp
                     //Console.WriteLine("Input: " + inputs[i][0] + " " + inputs[i][1] + " " + inputs[i][2] + " Output: " + outputs[i]);
                 }
 
-                var none = outputs.Where((o) => o == -1).Count();
+                var none = outputs.Where((o) => o == 2).Count();
                 var sell = outputs.Where((o) => o == 0).Count();
                 var buy = outputs.Where((o) => o == 1).Count();
 

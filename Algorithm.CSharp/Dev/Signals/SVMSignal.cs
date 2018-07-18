@@ -66,6 +66,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                     int prediction = _svm.Decide(inputs);
                     var probability = _svm.Probability(inputs);
+                    var logLikelihood = _svm.LogLikelihood(inputs);
 
                     /*var dbnPredictions = _dbn.Compute(inputs);
                     var shortPrediction = dbnPredictions.First();
@@ -79,29 +80,17 @@ namespace QuantConnect.Algorithm.CSharp
                         //Console.WriteLine("Short Exit Time: {0} Prediction: {1} Probability: {2}", args.EndTime, prediction, probability);
                     }
 
-                    if (false)
+                    if (prediction != 2)
                     {
-                        //Console.WriteLine("Time: {0} Prediction: {1} Probability: {2} Long Prediction: {3} Short Prediction: {4}", args.EndTime, prediction, probability, longPrediction, shortPrediction);
+                        //Console.WriteLine("Time: {0} Prediction: {1} Probability: {2}, Log Likelihood: {3} Score: {4}", args.EndTime, prediction, probability, logLikelihood);
                     }
 
                     // EURUSD 0.9999
-                    var probabilityFilter = probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
+                    var probabilityFilter = logLikelihood >= 8;//probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
 
                     var longExit = Signal == SignalType.Long && prediction == 0;
                     var shortExit = Signal == SignalType.Short && prediction == 1;
 
-                    /*if (!_securityHolding.Invested && probabilityFilter && prediction == 1)
-                    {
-                        Signal = Signal != SignalType.PendingLong ? SignalType.PendingLong : SignalType.Long;
-                    }
-                    else if (!_securityHolding.Invested && probabilityFilter && prediction == 0)
-                    {
-                        Signal = Signal != SignalType.PendingShort ? SignalType.PendingShort : SignalType.Short;
-                    }
-                    else if (probabilityFilter && ((_securityHolding.Invested && prediction == 1 && Signal == SignalType.Short) || (_securityHolding.Invested && prediction == 0 && Signal == SignalType.Long)))
-                    {
-                        Signal = SignalType.Exit;
-                    }*/
                     if (!_securityHolding.Invested && probabilityFilter && prediction == 1)
                     {
                         Signal = Signal != SignalType.PendingLong ? SignalType.PendingLong : SignalType.Long;
@@ -181,6 +170,25 @@ namespace QuantConnect.Algorithm.CSharp
             }*/
         }
 
+        public void PCA(List<double[]> inputs)
+        {
+            var pca = new PrincipalComponentAnalysis()
+            {
+                Method = PrincipalComponentMethod.Center,
+                Whiten = true,
+            };
+
+            var transform = pca.Learn(inputs.ToArray());
+
+            var componentProportions = pca.ComponentProportions;
+            var cumulativeProportions = pca.CumulativeProportions;
+            var means = pca.Means;
+
+            Console.WriteLine("Component Proportions: {0}", string.Join(" ", componentProportions));
+            Console.WriteLine("Cumulative Proportions: {0}", string.Join(" ", cumulativeProportions));
+            Console.WriteLine("Means: {0}", string.Join(" ", means));
+        }
+
         public void TrainSVM(List<double[]> inputs, List<int> outputs, List<double> weights = null)
         {
             var sell = outputs.Where((o) => o == 0).Count();
@@ -195,15 +203,32 @@ namespace QuantConnect.Algorithm.CSharp
 
             var sellSamples = zipped.Where((o) => o.Item2 == 0);
             var buySamples = zipped.Where((o) => o.Item2 == 1);
+            //var ignoreSamples = zipped.Where((o) => o.Item2 == 2);
 
-            var trainingInputs = sellSamples.Take(trainingSamples / 2).Select((s) => s.Item1).Concat(buySamples.Take(trainingSamples / 2).Select((s) => s.Item1)).ToArray();
-            var trainingOutputs = sellSamples.Take(trainingSamples / 2).Select((s) => s.Item2).Concat(buySamples.Take(trainingSamples / 2).Select((s) => s.Item2)).ToArray();
-            var trainingWeights = sellSamples.Take(trainingSamples / 2).Select((s) => s.Item3).Concat(buySamples.Take(trainingSamples / 2).Select((s) => s.Item3)).ToArray();
+            var trainingInputs = sellSamples.Take(trainingSamples / 2).Select((s) => s.Item1)
+                                            .Concat(buySamples.Take(trainingSamples / 2).Select((s) => s.Item1))
+                                            //.Concat(ignoreSamples.Take(trainingSamples / 3).Select((s) => s.Item1))
+                                            .ToArray();
+            var trainingOutputs = sellSamples.Take(trainingSamples / 2).Select((s) => s.Item2)
+                                            .Concat(buySamples.Take(trainingSamples / 2).Select((s) => s.Item2))
+                                            //.Concat(ignoreSamples.Take(trainingSamples / 3).Select((s) => s.Item2))
+                                            .ToArray();
+            var trainingWeights = sellSamples.Take(trainingSamples / 2).Select((s) => s.Item3)
+                                            .Concat(buySamples.Take(trainingSamples / 2).Select((s) => s.Item3))
+                                            //.Concat(ignoreSamples.Take(trainingSamples / 3).Select((s) => s.Item3))
+                                            .ToArray();
 
             Console.WriteLine("Training SVM inputs: {0} Outputs: {1}, Weights: {2}", trainingInputs.Length, trainingOutputs.Length, trainingWeights.Length);
 
             _inputs.AddRange(trainingInputs);
+
+            Console.WriteLine("Non normalized");
+            PCA(trainingInputs.ToList());
+
             trainingInputs = Accord.Statistics.Tools.ZScores(trainingInputs);
+
+            Console.WriteLine("Normalized");
+            PCA(trainingInputs.ToList());
             //inputs = Tools.Center(inputs);
             //inputs = Tools.Whitening(inputs);
 
@@ -215,6 +240,7 @@ namespace QuantConnect.Algorithm.CSharp
                     Tolerance = 0.001,
                     Epsilon = 0.000001,
                     Kernel = new Gaussian<Polynomial>(new Polynomial(degree: 3), sigma: 4.2), //new Additive(new Gaussian(0.01)),
+                    Strategy = SelectionStrategy.WorstPair,
                     //UseKernelEstimation = true,
                     //UseComplexityHeuristic = true,
                     //CacheSize = 0
@@ -228,15 +254,21 @@ namespace QuantConnect.Algorithm.CSharp
             var calibrationInputs = sellSamples.Skip(trainingSamples / 2)
                                                .Take(calibrationSamples / 2)
                                                .Select((s) => s.Item1)
-                                               .Concat(buySamples.Skip(trainingSamples / 2).Take(calibrationSamples / 2).Select((s) => s.Item1)).ToArray();
+                                               .Concat(buySamples.Skip(trainingSamples / 2).Take(calibrationSamples / 2).Select((s) => s.Item1))
+                                               //.Concat(ignoreSamples.Skip(trainingSamples / 3).Take(calibrationSamples / 3).Select((s) => s.Item1))
+                                               .ToArray();
             var calibrationOutputs = sellSamples.Skip(trainingSamples / 2)
                                                 .Take(calibrationSamples / 2)
                                                 .Select((s) => s.Item2)
-                                                .Concat(buySamples.Skip(trainingSamples / 2).Take(calibrationSamples / 2).Select((s) => s.Item2)).ToArray();
+                                                .Concat(buySamples.Skip(trainingSamples / 2).Take(calibrationSamples / 2).Select((s) => s.Item2))
+                                                //.Concat(ignoreSamples.Skip(trainingSamples / 3).Take(calibrationSamples / 3).Select((s) => s.Item2))
+                                                .ToArray();
             var calibrationWeights = sellSamples.Skip(trainingSamples / 2)
                                                 .Take(calibrationSamples / 2)
                                                 .Select((s) => s.Item3)
-                                                .Concat(buySamples.Skip(trainingSamples / 2).Take(calibrationSamples / 2).Select((s) => s.Item3)).ToArray();
+                                                .Concat(buySamples.Skip(trainingSamples / 2).Take(calibrationSamples / 2).Select((s) => s.Item3))
+                                                //.Concat(ignoreSamples.Skip(trainingSamples / 3).Take(calibrationSamples / 3).Select((s) => s.Item3))
+                                                .ToArray();
 
             Console.WriteLine("Calibration SVM inputs: {0} Outputs: {1}, Weights: {2}", calibrationInputs.Length, calibrationOutputs.Length, calibrationWeights.Length);
 
