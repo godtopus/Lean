@@ -145,7 +145,7 @@ namespace QuantConnect.Algorithm.CSharp
                         var current = quoteBars[j];
                         if (current.High >= longTarget && current.Low > longStop && longSetup)
                         {
-                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i], stochAverage[i] });
+                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i] });
                             outputs.Add(1);
 
                             var profit = current.High - quoteBars[i].Close;
@@ -160,7 +160,7 @@ namespace QuantConnect.Algorithm.CSharp
                         }
                         else if (current.Low <= shortTarget && current.High < shortStop && shortSetup)
                         {
-                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i], stochAverage[i] });
+                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i]});
                             outputs.Add(0);
 
                             var profit = quoteBars[i].Close - current.Low;
@@ -238,7 +238,7 @@ namespace QuantConnect.Algorithm.CSharp
                     consolidator.Update(bar);
                 }
 
-                var signal = new SVMSignal(consolidator, stoch, stochMA, rolling, Portfolio[symbol]);
+                var signal = new SVMSignal(consolidator, stoch, stochMA, rolling, Portfolio[symbol], this);
                 signal.TrainSVM(inputs, outputs, weights);
                 //signal.TrainNN(inputs, outputs, weights);
 
@@ -260,11 +260,31 @@ namespace QuantConnect.Algorithm.CSharp
             plotter.AddSeries(new Series("Buy", SeriesType.Scatter, "", Color.Green, ScatterMarkerSymbol.Triangle));
             plotter.AddSeries(new Series("Sell", SeriesType.Scatter, "", Color.Red, ScatterMarkerSymbol.TriangleDown));
             plotter.AddSeries(new Series("Stopped", SeriesType.Scatter, "", Color.Yellow, ScatterMarkerSymbol.Diamond));
+            plotter.AddSeries(new Series("Prediction", SeriesType.Bar, 1));
+            plotter.AddSeries(new Series("Probability", SeriesType.Bar, 2));
             AddChart(plotter);
 
             Chart indicator = new Chart("Indicator");
-            plotter.AddSeries(new Series("STO", SeriesType.Line, 1));
+            indicator.AddSeries(new Series("STO", SeriesType.Line, 1));
             AddChart(indicator);
+
+            Chart prediction = new Chart("Prediction");
+            prediction.AddSeries(new Series("Pred", SeriesType.Bar, 0));
+            AddChart(prediction);
+
+            Chart probability = new Chart("Probability");
+            probability.AddSeries(new Series("Prob", SeriesType.Bar, 0));
+            AddChart(probability);
+        }
+
+        public void PlotSignal(QuoteBar current, int prediction, double logLikelihood)
+        {
+            Plot("Prediction", "Pred", prediction);
+            Plot("Probability", "Prob", logLikelihood);
+
+            Plot("Plotter", "Price", current.Value);
+            Plot("Plotter", "Prediction", prediction);
+            Plot("Plotter", "Probability", logLikelihood);
         }
 
         public void OnData(QuoteBars data)
@@ -314,7 +334,7 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 foreach (var symbol in Symbols.Where(s => ticket.Symbol.Value == s))
                 {
-                    Plot("Plotter", "Price", Securities[symbol].Price);
+                    //Plot("Plotter", "Price", Securities[symbol].Price);
                     //Plot("Plotter", "STO", _stoch[symbol]);
 
                     if (ticket.OrderType == OrderType.Market && orderEvent.Direction == OrderDirection.Buy)

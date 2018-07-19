@@ -41,15 +41,18 @@ namespace QuantConnect.Algorithm.CSharp
 
         private GeneralConfusionMatrix _cm;
 
+        private SVMStrategy _qcAlgorithm;
+
         private List<double[]> _inputs = new List<double[]>();
 
-        public SVMSignal(QuoteBarConsolidator consolidator, Stochastic stoch, HullMovingAverage stochMA, RollingWindow<double> rolling, SecurityHolding securityHolding)
+        public SVMSignal(QuoteBarConsolidator consolidator, Stochastic stoch, HullMovingAverage stochMA, RollingWindow<double> rolling, SecurityHolding securityHolding, SVMStrategy qcAlgorithm)
         {
             _consolidator = consolidator;
             _stoch = stoch;
             _StochMA = stochMA;
             _rolling = rolling;
             _securityHolding = securityHolding;
+            _qcAlgorithm = qcAlgorithm;
 
             stochMA.Updated += (sender, args) =>
             {
@@ -59,7 +62,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                     //Console.WriteLine("{0}, {1}, {2}", filtered.Count(), _rolling.Count(), _stoch.Current.Value);
 
-                    var inputs = new double[] { (double) (args.Value / _stoch.Current.Value), filtered.Count(), filtered.Average() };
+                    var inputs = new double[] { (double) (args.Value / _stoch.Current.Value), filtered.Count() };
                     _inputs.Add(inputs);
                     inputs = Accord.Statistics.Tools.ZScores(_inputs.ToArray()).Last();
                     _inputs.RemoveAt(_inputs.Count - 1);
@@ -67,6 +70,8 @@ namespace QuantConnect.Algorithm.CSharp
                     int prediction = _svm.Decide(inputs);
                     var probability = _svm.Probability(inputs);
                     var logLikelihood = _svm.LogLikelihood(inputs);
+
+                    _qcAlgorithm.PlotSignal((QuoteBar) _consolidator.Consolidated, prediction == 0 ? -1 : prediction, logLikelihood);
 
                     /*var dbnPredictions = _dbn.Compute(inputs);
                     var shortPrediction = dbnPredictions.First();
@@ -86,7 +91,7 @@ namespace QuantConnect.Algorithm.CSharp
                     }
 
                     // EURUSD 0.9999
-                    var probabilityFilter = logLikelihood >= 8;//probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
+                    var probabilityFilter = logLikelihood >= 4;//probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
 
                     var longExit = Signal == SignalType.Long && prediction == 0;
                     var shortExit = Signal == SignalType.Short && prediction == 1;
@@ -94,18 +99,27 @@ namespace QuantConnect.Algorithm.CSharp
                     if (!_securityHolding.Invested && probabilityFilter && prediction == 1)
                     {
                         Signal = Signal != SignalType.PendingLong ? SignalType.PendingLong : SignalType.Long;
+                        Console.WriteLine("Long Signal: {0} Probability: {1} Log Likelihood: {2}", Signal, probability, logLikelihood);
+                        Console.WriteLine("Long STO: {0} STO MA: {1} Count: {2}", _stoch.Current.Value, args.Value, filtered.Count());
+                        Console.WriteLine("Long Time: {0} Price: {1}", _consolidator.Consolidated.Time, _consolidator.Consolidated.Value);
                     }
                     else if (!_securityHolding.Invested && probabilityFilter && prediction == 0)
                     {
                         Signal = Signal != SignalType.PendingShort ? SignalType.PendingShort : SignalType.Short;
+                        Console.WriteLine("Short Signal: {0} Probability: {1} Log Likelihood: {2}", Signal, probability, logLikelihood);
+                        Console.WriteLine("Short STO: {0} STO MA: {1} Count: {2}", _stoch.Current.Value, args.Value, filtered.Count());
+                        Console.WriteLine("Short Time: {0} Price: {1}", _consolidator.Consolidated.Time, _consolidator.Consolidated.Value);
                     }
                     else if ((_securityHolding.Invested && longExit) || (_securityHolding.Invested && shortExit))
                     {
+                        Console.WriteLine("Exit Signal: {0} Probability: {1} Log Likelihood: {2}", Signal, probability, logLikelihood);
+                        Console.WriteLine("Exit STO: {0} STO MA: {1} Count: {2}", _stoch.Current.Value, args.Value, filtered.Count());
+                        Console.WriteLine("Exit Time: {0} Price: {1}", _consolidator.Consolidated.Time, _consolidator.Consolidated.Value);
                         Signal = SignalType.Exit;
                     }
-                    else if (Signal == SignalType.PendingLong || Signal == SignalType.PendingShort)
+                    else if (!_securityHolding.Invested && (Signal == SignalType.PendingLong || Signal == SignalType.PendingShort))
                     {
-                        //Signal = SignalType.NoSignal;
+                        Signal = SignalType.NoSignal;
                     }
                     else
                     {
@@ -236,7 +250,7 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 Learner = (param) => new SequentialMinimalOptimization<Gaussian<Polynomial>>()
                 {
-                    Complexity = 0.4,
+                    Complexity = 1,
                     Tolerance = 0.001,
                     Epsilon = 0.000001,
                     Kernel = new Gaussian<Polynomial>(new Polynomial(degree: 3), sigma: 4.2), //new Additive(new Gaussian(0.01)),
