@@ -21,6 +21,11 @@ namespace QuantConnect.Algorithm.CSharp
 
         public bool IsTradable = true;
 
+        public void Retrain(List<double[]> inputs, List<int> outputs, List<double> weights = null)
+        {
+            ((IRetrainable)EnterSignal).Retrain(inputs, outputs, weights);
+        }
+
         public void Liquidate()
         {
             MarkStopTicketsFilled();

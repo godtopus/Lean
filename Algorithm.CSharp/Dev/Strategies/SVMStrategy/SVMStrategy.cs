@@ -15,7 +15,7 @@ namespace QuantConnect.Algorithm.CSharp
 {
     public class SVMStrategy : QCAlgorithm, IRequiredOrderMethods
     {
-        public string[] Forex = { /*"NZDUSD",*/ "EURUSD"/*, "AUDUSD",*/ /*"GBPUSD", "EURGBP", "EURCHF", "AUDUSD", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
+        public string[] Forex = { /*"NZDUSD",*/ "EURUSD", "GBPUSD"/*, "AUDUSD",*/ /*"GBPUSD", "EURGBP", "EURCHF", "AUDUSD", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
 
         public IEnumerable<string> Symbols => Forex;
 
@@ -59,6 +59,10 @@ namespace QuantConnect.Algorithm.CSharp
                         _tradingAssets[s].IsTradable = false;
                     }
                 });
+
+            var allInputs = new List<double[]>();
+            var allOutputs = new List<int>();
+            var allWeights = new List<double>();
 
             foreach (var symbol in Symbols)
             {
@@ -189,6 +193,10 @@ namespace QuantConnect.Algorithm.CSharp
                     }
                 }
 
+                allInputs.AddRange(inputs);
+                allOutputs.AddRange(outputs);
+                allWeights.AddRange(weights);
+
                 for (var i = 0; i < inputs.Count; i++)
                 {
                     //Console.WriteLine("Input: " + inputs[i][0] + " " + inputs[i][1] + " " + inputs[i][2] + " Output: " + outputs[i]);
@@ -251,6 +259,11 @@ namespace QuantConnect.Algorithm.CSharp
                         _maximumTradeSize,
                         this
                     ));
+            }
+
+            foreach (var symbol in Symbols)
+            {
+                _tradingAssets[symbol].Retrain(allInputs, allOutputs, allWeights);
             }
 
             //AddData<DailyFx>("DFX", Resolution.Minute, TimeZones.Utc);

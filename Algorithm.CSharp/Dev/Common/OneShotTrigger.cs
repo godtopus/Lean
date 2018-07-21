@@ -1,8 +1,9 @@
 ﻿using QuantConnect.Data.Market;
+using System.Collections.Generic;
 
 namespace QuantConnect.Algorithm.CSharp
 {
-    class OneShotTrigger : ISignal
+    class OneShotTrigger : IRetrainable
     {
         private ISignal _signal;
         private SignalType _previousSignalType;
@@ -26,6 +27,11 @@ namespace QuantConnect.Algorithm.CSharp
                 Signal = SignalType.NoSignal;
             }
             _previousSignalType = _signal.Signal;
+        }
+
+        public void Retrain(List<double[]> inputs, List<int> outputs, List<double> weights = null)
+        {
+            ((IRetrainable)_signal).Retrain(inputs, outputs, weights);
         }
 
         public SignalType Signal { get; private set; }

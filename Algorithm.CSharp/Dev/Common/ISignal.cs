@@ -1,4 +1,5 @@
 ﻿using QuantConnect.Data.Market;
+using System.Collections.Generic;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -12,6 +13,11 @@ namespace QuantConnect.Algorithm.CSharp
     public interface IExitSignal : ISignal
     {
         ISignal ExitSignalFactory(TradeProfile tradeProfile);
+    }
+
+    public interface IRetrainable : ISignal
+    {
+        void Retrain(List<double[]> inputs, List<int> outputs, List<double> weights = null);
     }
 
     public enum SignalType
