@@ -145,7 +145,7 @@ namespace QuantConnect.Algorithm.CSharp
                         var current = quoteBars[j];
                         if (current.High >= longTarget && current.Low > longStop && longSetup)
                         {
-                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i] });
+                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i], stochs[i] });
                             outputs.Add(1);
 
                             var profit = current.High - quoteBars[i].Close;
@@ -160,7 +160,7 @@ namespace QuantConnect.Algorithm.CSharp
                         }
                         else if (current.Low <= shortTarget && current.High < shortStop && shortSetup)
                         {
-                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i]});
+                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i], stochs[i] });
                             outputs.Add(0);
 
                             var profit = quoteBars[i].Close - current.Low;

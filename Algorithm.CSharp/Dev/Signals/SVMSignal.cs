@@ -62,7 +62,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                     //Console.WriteLine("{0}, {1}, {2}", filtered.Count(), _rolling.Count(), _stoch.Current.Value);
 
-                    var inputs = new double[] { (double) (args.Value / _stoch.Current.Value), filtered.Count() };
+                    var inputs = new double[] { (double) (args.Value / _stoch.Current.Value), filtered.Count(), (double) _stoch.Current.Value };
                     _inputs.Add(inputs);
                     inputs = Accord.Statistics.Tools.ZScores(_inputs.ToArray()).Last();
                     _inputs.RemoveAt(_inputs.Count - 1);

@@ -80,7 +80,7 @@ namespace QuantConnect.Algorithm.CSharp
                 if (profile.Quantity > 0 && _security.Exchange.ExchangeOpen)
                 {
                     profile.OpenTicket = _orderMethods.MarketOrder(_symbol, (int)EnterSignal.Signal * profile.Quantity);
-                    //profile.OpenTicket = _orderMethods.LimitOrder(_symbol, (int)EnterSignal.Signal * profile.Quantity, data.Price);
+                    //profile.OpenTicket = _orderMethods.LimitOrder(_symbol, (int)EnterSignal.Signal * profile.Quantity, data.Price - (int)EnterSignal.Signal * (10m / 10000m));
                     profile.StopTicket = _orderMethods.StopMarketOrder(_symbol, -(int)EnterSignal.Signal * profile.Quantity,
                         OrderUtil.RoundOrderPrices(profile.OpenTicket.AverageFillPrice - (int)EnterSignal.Signal * profile.DeltaStopLoss));
 
