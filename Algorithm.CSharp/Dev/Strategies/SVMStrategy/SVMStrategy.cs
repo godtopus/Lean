@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using QuantConnect.Data.Custom;
 using QuantConnect.Orders;
 using System.Drawing;
+using QuantConnect.Statistics;
+using QuantConnect.Algorithm.CSharp.Dev.Common;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -377,6 +379,9 @@ namespace QuantConnect.Algorithm.CSharp
 
         public override void OnEndOfAlgorithm()
         {
+            var tradeStatistics = new TradeStatistics(TradeBuilder.ClosedTrades);
+            var equityChangePerDay = PerformanceMetrics.EquityChangePerDay(TradeBuilder.ClosedTrades);
+            PerformanceMetrics.TRASYCODRAVOPFACOM(tradeStatistics);
         }
 
         /*public override void OnMarginCallWarning()

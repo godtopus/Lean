@@ -75,14 +75,44 @@
     <Reference Include="DynamicInterop, Version=0.7.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\DynamicInterop.0.7.4\lib\net40\DynamicInterop.dll</HintPath>
     </Reference>
+    <Reference Include="ILNumerics.Computing, Version=4.8.0.0, Culture=neutral, PublicKeyToken=8d9bf50ef854734d, processorArchitecture=MSIL">
+      <HintPath>..\packages\ILNumerics.4.8.0.0\lib\ILNumerics.Computing.dll</HintPath>
+    </Reference>
+    <Reference Include="ILNumerics.Core, Version=4.8.0.0, Culture=neutral, PublicKeyToken=9651adc37f12bb00, processorArchitecture=MSIL">
+      <HintPath>..\packages\ILNumerics.4.8.0.0\lib\ILNumerics.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="ILNumerics.Drawing, Version=4.8.0.0, Culture=neutral, PublicKeyToken=e22c8a010c3b081a, processorArchitecture=MSIL">
+      <HintPath>..\packages\ILNumerics.4.8.0.0\lib\ILNumerics.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="ILNumerics.IO.HDF5, Version=4.8.0.0, Culture=neutral, PublicKeyToken=85055996c33d20cc, processorArchitecture=MSIL">
+      <HintPath>..\packages\ILNumerics.4.8.0.0\lib\ILNumerics.IO.HDF5.dll</HintPath>
+    </Reference>
+    <Reference Include="ILNumerics.Toolboxes.MachineLearning, Version=4.8.0.0, Culture=neutral, PublicKeyToken=630a0f4f2119eebc, processorArchitecture=MSIL">
+      <HintPath>..\packages\ILNumerics.4.8.0.0\lib\ILNumerics.Toolboxes.MachineLearning.dll</HintPath>
+    </Reference>
+    <Reference Include="ILNumerics.Toolboxes.Optimization, Version=4.8.0.0, Culture=neutral, PublicKeyToken=d11317283e0d33b5, processorArchitecture=MSIL">
+      <HintPath>..\packages\ILNumerics.4.8.0.0\lib\ILNumerics.Toolboxes.Optimization.dll</HintPath>
+    </Reference>
+    <Reference Include="ILNumerics.Toolboxes.Statistics, Version=4.8.0.0, Culture=neutral, PublicKeyToken=176aaed3d023b64c, processorArchitecture=MSIL">
+      <HintPath>..\packages\ILNumerics.4.8.0.0\lib\ILNumerics.Toolboxes.Statistics.dll</HintPath>
+    </Reference>
     <Reference Include="MathNet.Numerics, Version=3.19.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\MathNet.Numerics.3.19.0\lib\net40\MathNet.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="NDtw, Version=0.2.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NDtw.0.2.3.0\lib\net40\NDtw.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="NodaTime, Version=1.3.0.0, Culture=neutral, PublicKeyToken=4226afe0d9b296d1, processorArchitecture=MSIL">
       <HintPath>..\packages\NodaTime.1.3.4\lib\net35-Client\NodaTime.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenTK, Version=1.1.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
+      <HintPath>..\packages\ILNumerics.4.8.0.0\lib\OpenTK.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenTK.GLControl, Version=1.1.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
+      <HintPath>..\packages\ILNumerics.4.8.0.0\lib\OpenTK.GLControl.dll</HintPath>
     </Reference>
     <Reference Include="Python.Runtime, Version=2.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\QuantConnect.pythonnet.1.0.5.7\lib\Python.Runtime.dll</HintPath>
@@ -117,10 +147,12 @@
     <Compile Include="Dev\Common\ISignal.cs" />
     <Compile Include="Dev\Common\OneShotTrigger.cs" />
     <Compile Include="Dev\Common\OrderUtil.cs" />
+    <Compile Include="Dev\Common\PerformanceMetrics.cs" />
     <Compile Include="Dev\Common\ProfitTargetSignal.cs" />
     <Compile Include="Dev\Common\StaticRandom.cs" />
     <Compile Include="Dev\Common\TradeProfile.cs" />
     <Compile Include="Dev\Common\TradingAsset.cs" />
+    <Compile Include="Dev\Indicators\InternalBarStrength.cs" />
     <Compile Include="Dev\Indicators\Alligator.cs" />
     <Compile Include="Dev\Indicators\FractalChannel.cs" />
     <Compile Include="Dev\Indicators\FuzzyEngine.cs" />
@@ -138,6 +170,8 @@
     <Compile Include="Dev\Signals\RSISignal.cs" />
     <Compile Include="Dev\Signals\SVMSignal.cs" />
     <Compile Include="Dev\Signals\WilliamsFractalsSignal.cs" />
+    <Compile Include="Dev\Statistics\DBA.cs" />
+    <Compile Include="Dev\Statistics\MultiDimensionalScaling.cs" />
     <Compile Include="Dev\Strategies\SVMStrategy\SVMStrategy.cs" />
     <Compile Include="Dev\VolatilityModels\AverageTrueRangeVolatilityModel.cs" />
     <Compile Include="Dev\VolatilityModels\ThreeSigmaVolatilityModel.cs" />
@@ -287,6 +321,20 @@
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bin32\libiomp5md.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="bin32\mkl_custom.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="bin64\libiomp5md.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="bin64\mkl_custom.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
