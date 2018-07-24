@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QuantConnect.Orders;
+using System;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -11,6 +12,11 @@ namespace QuantConnect.Algorithm.CSharp
             var stopRound = Math.Round(stopPrice / increment) * increment;
 
             return stopRound;
+        }
+
+        public static bool IsUnprofitable(decimal currentPrice, OrderEvent orderEvent)
+        {
+            return orderEvent.Status == OrderStatus.Filled && (orderEvent.Direction == OrderDirection.Buy ? currentPrice < orderEvent.FillPrice : currentPrice > orderEvent.FillPrice);
         }
     }
 }

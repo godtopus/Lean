@@ -19,6 +19,7 @@ using Accord.Neuro.Learning;
 using Accord.Neuro.ActivationFunctions;
 using Accord.Statistics.Distributions.Fitting;
 using Accord.Statistics.Distributions.Multivariate;
+using QuantConnect.Algorithm.CSharp.Dev.Common;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -27,12 +28,7 @@ namespace QuantConnect.Algorithm.CSharp
         private MulticlassSupportVectorMachine<Gaussian<Polynomial>> _svm;
         private ActivationNetwork _dbn;
         private PrincipalComponentAnalysis _pca;
-
-        private HullMovingAverage _slow;
-        private InstantTrend _slowSlope;
-        private LogReturn _logReturns;
-        private LeastSquaresMovingAverage _returnSlope;
-        private RelativeStrengthIndex _rsi;
+        private GeneralConfusionMatrix _cm;
 
         private QuoteBarConsolidator _consolidator;
         private Stochastic _stoch;
@@ -40,9 +36,6 @@ namespace QuantConnect.Algorithm.CSharp
         private RollingWindow<double> _rolling;
 
         private SecurityHolding _securityHolding;
-        private RollingWindow<int> _previousPredictions = new RollingWindow<int>(15);
-
-        private GeneralConfusionMatrix _cm;
 
         private SVMStrategy _qcAlgorithm;
 
@@ -67,8 +60,7 @@ namespace QuantConnect.Algorithm.CSharp
                     var filtered = _rolling.TakeWhile((s) => args.Value > 50 ? s > 50 : args.Value < 50 ? s < 50 : false);
 
                     //Console.WriteLine("{0}, {1}, {2}", filtered.Count(), _rolling.Count(), _stoch.Current.Value);
-
-                    var inputs = new double[] { (double) (args.Value / _stoch.Current.Value), filtered.Count(), (double) _stoch.Current.Value };
+                    var inputs = new double[] { filtered.Average(), filtered.Count(), (double)args.Value };
                     _inputs.Add(inputs);
                     inputs = Accord.Statistics.Tools.ZScores(_inputs.ToArray()).Last();
                     _inputs.RemoveAt(_inputs.Count - 1);
@@ -78,7 +70,7 @@ namespace QuantConnect.Algorithm.CSharp
                         inputs = _pca.Transform(inputs);
                     }
 
-                    int prediction = _svm.Decide(inputs);
+                    var prediction = _svm.Decide(inputs);
                     var probability = _svm.Probability(inputs);
                     var logLikelihood = _svm.LogLikelihood(inputs);
 
@@ -102,12 +94,12 @@ namespace QuantConnect.Algorithm.CSharp
                     }
 
                     // EURUSD 0.9999
-                    var probabilityFilter = logLikelihood >= 5.5;//probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
+                    var probabilityFilter = logLikelihood >= 6;//probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
 
                     var longExit = Signal == SignalType.Long && prediction == 0;
                     var shortExit = Signal == SignalType.Short && prediction == 1;
 
-                    if (!_securityHolding.Invested && probabilityFilter && prediction == 1)
+                    if (!_securityHolding.Invested && probabilityFilter && prediction == 1 && _rolling[0] > rolling[1])
                     {
                         Signal = Signal != SignalType.PendingLong ? SignalType.PendingLong : SignalType.Long;
 
@@ -118,7 +110,7 @@ namespace QuantConnect.Algorithm.CSharp
                             Console.WriteLine("Long Time: {0} Price: {1}", _consolidator.Consolidated.Time, _consolidator.Consolidated.Value);
                         }
                     }
-                    else if (!_securityHolding.Invested && probabilityFilter && prediction == 0)
+                    else if (!_securityHolding.Invested && probabilityFilter && prediction == 0 && _rolling[0] < rolling[1])
                     {
                         Signal = Signal != SignalType.PendingShort ? SignalType.PendingShort : SignalType.Short;
 
@@ -245,7 +237,7 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 Learner = (param) => new SequentialMinimalOptimization<Gaussian<Polynomial>>()
                 {
-                    Complexity = 2,
+                    Complexity = 3,
                     Tolerance = 0.001,
                     Epsilon = 0.000001,
                     Kernel = new Gaussian<Polynomial>(new Polynomial(degree: 3), sigma: 4.2), //new Additive(new Gaussian(0.01)),

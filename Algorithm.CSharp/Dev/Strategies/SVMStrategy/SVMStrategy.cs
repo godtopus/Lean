@@ -83,7 +83,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                 var consolidatorT = new QuoteBarConsolidator(TimeSpan.FromMinutes(15));
                 var stochT = new Stochastic(symbol, 14, 3, 3);
-                var stochTMA = new HullMovingAverage(symbol, 2).Of(stochT);
+                var stochTMA = new HullMovingAverage(symbol, 3).Of(stochT);
                 RegisterIndicator(symbol, stochT, consolidatorT);
                 SubscriptionManager.AddConsolidator(symbol, consolidatorT);
 
@@ -91,7 +91,8 @@ namespace QuantConnect.Algorithm.CSharp
 
                 var quoteBars = new List<QuoteBar>();
                 var stochs = new List<double>();
-                var rollingStochs = new RollingWindow<double>(100);
+                var rollingStochs = new RollingWindow<double>(1000);
+                var stochsMA = new List<double>();
                 var stochCount = new List<double>();
                 var stochAverage = new List<double>();
 
@@ -104,8 +105,9 @@ namespace QuantConnect.Algorithm.CSharp
                     }
 
                     quoteBars.Add((QuoteBar)consolidatorT.Consolidated);
-                    stochs.Add((double)args.Value);
+                    stochs.Add((double)stochT.Current.Value);
                     rollingStochs.Add((double)args.Value);
+                    stochsMA.Add((double)args.Value);
 
                     var filtered = rollingStochs.TakeWhile((s) => args.Value > 50 ? s > 50 : args.Value < 50 ? s < 50 : false);
                     stochCount.Add(filtered.Count());
@@ -133,13 +135,13 @@ namespace QuantConnect.Algorithm.CSharp
 
                 for (var i = 1; i < quoteBars.Count; i++)
                 {
-                    var longTarget = quoteBars[i].Close + (30m / 10000m);
-                    var longStop = quoteBars[i].Close - (10m / 10000m);
-                    var shortTarget = quoteBars[i].Close - (30m / 10000m);
-                    var shortStop = quoteBars[i].Close + (10m / 10000m);
+                    var longTarget = quoteBars[i].Close + (50m / 10000m);
+                    var longStop = quoteBars[i].Close - (20m / 10000m);
+                    var shortTarget = quoteBars[i].Close - (50m / 10000m);
+                    var shortStop = quoteBars[i].Close + (20m / 10000m);
 
-                    var longSetup = stochs[i] > 10 && stochs[i] < 45 && stochAverage[i] > stochAverage[i - 1];
-                    var shortSetup = stochs[i] < 90 && stochs[i] > 55 && stochAverage[i] < stochAverage[i - 1];
+                    var longSetup = stochs[i] >= 35 && stochsMA[i] > stochsMA[i - 1];
+                    var shortSetup = stochs[i] <= 65 && stochs[i] > 0 && stochsMA[i] < stochsMA[i - 1];
 
                     if (!longSetup && !shortSetup)
                     {
@@ -151,7 +153,7 @@ namespace QuantConnect.Algorithm.CSharp
                         var current = quoteBars[j];
                         if (current.High >= longTarget && current.Low > longStop && longSetup)
                         {
-                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i], stochs[i] });
+                            inputs.Add(new double[] { stochAverage[i], stochCount[i], stochsMA[i] });
                             outputs.Add(1);
 
                             var profit = current.High - quoteBars[i].Close;
@@ -159,14 +161,14 @@ namespace QuantConnect.Algorithm.CSharp
                             {
 
                             }*/
-                            weights.Add((double) (1m - (30m / 10000m) / profit));
+                            weights.Add((double) (1m - (50m / 10000m) / profit));
 
                             //i = j;
                             break;
                         }
                         else if (current.Low <= shortTarget && current.High < shortStop && shortSetup)
                         {
-                            inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i], stochs[i] });
+                            inputs.Add(new double[] { stochAverage[i], stochCount[i], stochs[i] });
                             outputs.Add(0);
 
                             var profit = quoteBars[i].Close - current.Low;
@@ -174,7 +176,7 @@ namespace QuantConnect.Algorithm.CSharp
                             {
 
                             }*/
-                            weights.Add((double) (1m - (30m / 10000m) / profit));
+                            weights.Add((double) (1m - (50m / 10000m) / profit));
                             //i = j;
                             break;
                         }
@@ -377,17 +379,26 @@ namespace QuantConnect.Algorithm.CSharp
             }
         }
 
+        private void GenerateTradeSummary(IEnumerable<Trade> trades, string header = "")
+        {
+            var tradeStatistics = new TradeStatistics(trades);
+            var tradeSummary = tradeStatistics.GetSummary();
+
+            Console.WriteLine(header);
+
+            foreach (KeyValuePair<string, string> kvp in tradeSummary)
+            {
+                Console.WriteLine("{0} {1}", kvp.Key, kvp.Value);
+            }
+        }
+
         public override void OnEndOfAlgorithm()
         {
             try
             {
-                var tradeStatistics = new TradeStatistics(TradeBuilder.ClosedTrades);
-                var tradeSummary = tradeStatistics.GetSummary();
-
-                foreach (KeyValuePair<string, string> kvp in tradeSummary)
-                {
-                    Console.WriteLine("{0} {1}", kvp.Key, kvp.Value);
-                }
+                GenerateTradeSummary(TradeBuilder.ClosedTrades, "Trade Summary (All Trades)");
+                GenerateTradeSummary(TradeBuilder.ClosedTrades.Where((t) => t.Direction == TradeDirection.Long), "Trade Summary (Long Trades)");
+                GenerateTradeSummary(TradeBuilder.ClosedTrades.Where((t) => t.Direction == TradeDirection.Short), "Trade Summary (Short Trades)");
 
                 var equityChangePerDay = PerformanceMetrics.EquityChangePerDay(TradeBuilder.ClosedTrades);
 

@@ -145,6 +145,7 @@
     <Compile Include="Dev\Common\EnumerableExtensions.cs" />
     <Compile Include="Dev\Common\IRequiredOrderMethods.cs" />
     <Compile Include="Dev\Common\ISignal.cs" />
+    <Compile Include="Dev\Common\MathUtil.cs" />
     <Compile Include="Dev\Common\OneShotTrigger.cs" />
     <Compile Include="Dev\Common\OrderUtil.cs" />
     <Compile Include="Dev\Common\PerformanceMetrics.cs" />

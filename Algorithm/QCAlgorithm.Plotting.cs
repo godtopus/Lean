@@ -193,8 +193,10 @@ namespace QuantConnect.Algorithm
             }
 
             var thisSeries = thisChart.Series[series];
-            if (thisSeries.Values.Count < 4000 || _liveMode)
+            //if (thisSeries.Values.Count < 4000 || _liveMode)
+            if (true)
             {
+                Debug("Turned off Rate Limiting");
                 thisSeries.AddPoint(UtcTime, value, _liveMode);
             }
             else
