@@ -17,6 +17,8 @@ using Accord.Neuro;
 using Accord.Neuro.Networks;
 using Accord.Neuro.Learning;
 using Accord.Neuro.ActivationFunctions;
+using Accord.Statistics.Distributions.Fitting;
+using Accord.Statistics.Distributions.Multivariate;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -100,7 +102,7 @@ namespace QuantConnect.Algorithm.CSharp
                     }
 
                     // EURUSD 0.9999
-                    var probabilityFilter = logLikelihood >= 4;//probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
+                    var probabilityFilter = logLikelihood >= 5.5;//probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
 
                     var longExit = Signal == SignalType.Long && prediction == 0;
                     var shortExit = Signal == SignalType.Short && prediction == 1;
@@ -162,6 +164,16 @@ namespace QuantConnect.Algorithm.CSharp
         public void Retrain(List<double[]> inputs, List<int> outputs, List<double> weights = null)
         {
             TrainSVM(inputs, outputs, weights);
+        }
+
+        public void EstimateDistribution(List<double[]> inputs)
+        {
+            var normal = new MultivariateNormalDistribution(3);
+
+            normal.Fit(inputs.ToArray(), new NormalOptions()
+            {
+                Robust = true
+            });
         }
 
         public void PCA(List<double[]> inputs)
@@ -233,7 +245,7 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 Learner = (param) => new SequentialMinimalOptimization<Gaussian<Polynomial>>()
                 {
-                    Complexity = 1,
+                    Complexity = 2,
                     Tolerance = 0.001,
                     Epsilon = 0.000001,
                     Kernel = new Gaussian<Polynomial>(new Polynomial(degree: 3), sigma: 4.2), //new Additive(new Gaussian(0.01)),
@@ -270,6 +282,26 @@ namespace QuantConnect.Algorithm.CSharp
             Console.WriteLine("Calibration SVM inputs: {0} Outputs: {1}, Weights: {2}", calibrationInputs.Length, calibrationOutputs.Length, calibrationWeights.Length);
 
             CalibrateSVM(calibrationInputs, calibrationOutputs, calibrationWeights);
+
+            var predictions = _svm.Decide(trainingInputs);
+            var logLikelihoods = _svm.LogLikelihood(trainingInputs);
+
+            var averagePrediction = predictions.Average();
+            var averageLogLikelihood = logLikelihoods.Average();
+
+            var histogram = new Accord.Statistics.Visualizations.Histogram().FromData(logLikelihoods);
+            var edges = histogram.Edges;
+            var values = histogram.Values;
+            var range = histogram.Range;
+            var stdDev = histogram.StdDev;
+            var mean = histogram.Mean;
+            var median = histogram.Median;
+
+            Console.WriteLine("Average Prediction: {0} Average Log Likelihood: {1}", averagePrediction, averageLogLikelihood);
+            Console.WriteLine("Histogram Edges: {0}", string.Join(" ", edges));
+            Console.WriteLine("Histogram Values: {0}", string.Join(" ", values));
+            Console.WriteLine("Histogram Range: {0}", string.Join(" ", range.Min, range.Max));
+            Console.WriteLine("Histogram Std Dev: {0} Mean: {1} Median: {2}", stdDev, mean, median);
         }
 
         public void CalibrateSVM(double[][] inputs, int[] outputs, double[] weights)

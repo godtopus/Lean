@@ -1,0 +1,434 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema targetNamespace="RCNetTypes"
+           attributeFormDefault="unqualified"
+           elementFormDefault="unqualified"
+           xmlns="RCNetTypes"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           >
+
+  <!-- ________________________________________LOW LEVEL TYPES_________________________________________________ -->
+  <!-- SIMPLE TYPES -->
+  <!-- ENUMERATION TYPES -->
+  <!-- Enumeration of random distribution -->
+  <xs:simpleType name="RandomDistributionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Uniform"/>
+      <xs:enumeration value="Gaussian"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Enumeration of neuron signal type -->
+  <xs:simpleType name="NeuronSignalType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Excitatory"/>
+      <xs:enumeration value="Inhibitory"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Enumeration of input coding type -->
+  <xs:simpleType name="InputCodingType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Analog"/>
+      <xs:enumeration value="SpikeTrain"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Enumeration of activation functions -->
+  <xs:simpleType name="ActivationFunctionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="AdExpIF"/>
+      <xs:enumeration value="AdSimpleIF"/>
+      <xs:enumeration value="BentIdentity"/>
+      <xs:enumeration value="Elliot"/>
+      <xs:enumeration value="ExpIF"/>
+      <xs:enumeration value="Gaussian"/>
+      <xs:enumeration value="Identity"/>
+      <xs:enumeration value="ISRU"/>
+      <xs:enumeration value="LeakyIF"/>
+      <xs:enumeration value="LeakyReLU"/>
+      <xs:enumeration value="Sigmoid"/>
+      <xs:enumeration value="SimpleIF"/>
+      <xs:enumeration value="Sinc"/>
+      <xs:enumeration value="Sinusoid"/>
+      <xs:enumeration value="SoftExponential"/>
+      <xs:enumeration value="SoftPlus"/>
+      <xs:enumeration value="TanH"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Enumeration of neural task type -->
+  <xs:simpleType name="NeuralTaskType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Prediction"/>
+      <xs:enumeration value="Classification"/>
+      <xs:enumeration value="Hybrid"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Auto option-->
+  <xs:simpleType name="AutoOptionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Auto"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- NA option-->
+  <xs:simpleType name="NAOptionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NA"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- NUMERIC TYPES -->
+  <!-- Nonzero unsigned integer -->
+  <xs:simpleType name="UIntGT0Type">
+    <xs:restriction base="xs:unsignedInt">
+      <xs:minInclusive value="1" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- UIntGT0Type with Auto option-->
+  <xs:simpleType name="UIntGT0AutoOptionType">
+    <xs:union memberTypes="UIntGT0Type AutoOptionType"/>
+  </xs:simpleType>
+
+  <!-- Unsigned double -->
+  <xs:simpleType name="UDoubleType">
+    <xs:restriction base="xs:double">
+      <xs:minInclusive value="0" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Unsigned double GT 0-->
+  <xs:simpleType name="UDoubleGT0Type">
+    <xs:restriction base="xs:double">
+      <xs:minExclusive value="0" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Double with NA option-->
+  <xs:simpleType name="DoubleNAOptionType">
+    <xs:union memberTypes="xs:double NAOptionType"/>
+  </xs:simpleType>
+
+  <!-- UDoubleGT0Type with NA option-->
+  <xs:simpleType name="UDoubleGT0NAOptionType">
+    <xs:union memberTypes="UDoubleGT0Type NAOptionType"/>
+  </xs:simpleType>
+
+  <!-- Unsigned double less than 1 -->
+  <xs:simpleType name="UDoubleLT1Type">
+    <xs:restriction base="xs:double">
+      <xs:minInclusive value="0" />
+      <xs:maxExclusive value="1" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Unsigned double greater than 1 -->
+  <xs:simpleType name="UDoubleGT1Type">
+    <xs:restriction base="xs:double">
+      <xs:minExclusive value="1" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Unsigned double less than or equal 1 -->
+  <xs:simpleType name="UDoubleLE1Type">
+    <xs:restriction base="xs:double">
+      <xs:minInclusive value="0" />
+      <xs:maxInclusive value="1" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- COMPLEX TYPES -->
+  <!-- Activation element -->
+  <xs:complexType name="ActivationCfgType">
+    <xs:attribute type="ActivationFunctionType" name="function" use="required"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg1" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg2" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg3" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg4" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg5" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg6" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg7" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg8" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg9" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg10" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg11" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg12" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg13" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg14" use="optional" default="NA"/>
+    <xs:attribute type="DoubleNAOptionType" name="arg15" use="optional" default="NA"/>
+  </xs:complexType>
+
+  <!-- Alone name element -->
+  <xs:complexType name="AloneNameType">
+    <xs:attribute type="xs:string" name="name" use="required"/>
+  </xs:complexType>
+
+  <!-- Random value element -->
+  <xs:complexType name="RandomValueType">
+    <xs:attribute type="xs:double" name="min" use="required"/>
+    <xs:attribute type="xs:double" name="max" use="required"/>
+    <xs:attribute type="xs:boolean" name="randomSign" use="optional" default="false"/>
+    <xs:attribute type="RandomDistributionType" name="distribution" use="optional" default="Uniform"/>
+  </xs:complexType>
+
+  <!-- ________________________________________FF NETWORK TYPES_________________________________________________ -->
+  <!-- FF network - regression (training) methods - enumeration -->
+  <xs:simpleType name="FFNetRegressionMethodType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Linear"/>
+      <xs:enumeration value="Resilient"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- FF network - hidden layer - configuration -->
+  <xs:complexType name="FFNetHiddenLayerCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="ActivationCfgType" name="activation" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute type="UIntGT0Type" name="neurons" use="required"/>
+  </xs:complexType>
+
+  <!-- FF network - hidden layers - configuration -->
+  <xs:complexType name="FFNetHiddenLayersCfgType">
+    <xs:sequence minOccurs="0" maxOccurs="1">
+      <xs:element type="FFNetHiddenLayerCfgType" name="layer" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- FF network - linear regression trainer - configuration -->
+  <xs:complexType name="FFNetLinRegrTrainerCfgType">
+    <xs:attribute type="UDoubleLT1Type" name="hiNoiseIntensity" use="required"/>
+    <xs:attribute type="UDoubleGT1Type" name="maxStretch" use="optional" default="8"/>
+    <xs:attribute type="UDoubleLT1Type" name="zeroMargin" use="required"/>
+  </xs:complexType>
+
+  <!-- FF network - resilient propagation trainer - configuration -->
+  <xs:complexType name="FFNetRPropTrainerCfgType">
+    <xs:attribute type="UDoubleLT1Type" name="zeroTolerance" use="required"/>
+    <xs:attribute type="UDoubleGT1Type" name="positiveEta" use="required"/>
+    <xs:attribute type="UDoubleLT1Type" name="negativeEta" use="required"/>
+    <xs:attribute type="UDoubleType" name="iniDelta" use="required"/>
+    <xs:attribute type="UDoubleType" name="minDelta" use="required"/>
+    <xs:attribute type="UDoubleType" name="maxDelta" use="required"/>
+  </xs:complexType>
+
+  <!-- FF network configuration -->
+  <xs:complexType name="FFNetCfgType">
+    <xs:sequence minOccurs="0" maxOccurs="1">
+      <xs:sequence minOccurs="1" maxOccurs="1">
+        <xs:element type="ActivationCfgType" name="outputActivation" minOccurs="1" maxOccurs="1"/>
+        <xs:element type="FFNetHiddenLayersCfgType" name="hiddenLayers" minOccurs="0" maxOccurs="1"/>
+      </xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="1">
+        <xs:element type="FFNetLinRegrTrainerCfgType" name="linRegrTrainer" minOccurs="1" maxOccurs="1"/>
+        <xs:element type="FFNetRPropTrainerCfgType" name="resPropTrainer" minOccurs="1" maxOccurs="1"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute type="FFNetRegressionMethodType" name="regressionMethod" use="required"/>
+  </xs:complexType>
+
+  <!-- ________________________________________PP NETWORK TYPES_________________________________________________ -->
+  <!-- Parallel Perceptron network configuration -->
+
+  <!-- FF network - p-delta rule trainer - configuration -->
+  <xs:complexType name="PPNetPDeltaRuleTrainerCfgType">
+    <xs:attribute type="UDoubleLT1Type" name="iniLR" use="required"/>
+    <xs:attribute type="UDoubleGT1Type" name="incLR" use="required"/>
+    <xs:attribute type="UDoubleLT1Type" name="decLR" use="required"/>
+    <xs:attribute type="UDoubleLT1Type" name="minLR" use="required"/>
+    <xs:attribute type="UDoubleLT1Type" name="maxLR" use="required"/>
+  </xs:complexType>
+
+
+  <xs:complexType name="PPNetCfgType">
+    <xs:sequence minOccurs="0" maxOccurs="1">
+      <xs:element type="PPNetPDeltaRuleTrainerCfgType" name="pDeltaRuleTrainer" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute type="UIntGT0Type" name="gates" use="required"/>
+    <xs:attribute type="UIntGT0Type" name="resolution" use="required"/>
+  </xs:complexType>
+
+  <!-- ________________________________________READOUT LAYER TYPES_________________________________________________ -->
+
+  <!-- Readout unit configuration -->
+  <xs:complexType name="ROutLayerUnitCfgType">
+    <xs:choice minOccurs="1" maxOccurs="1">
+      <xs:element type="FFNetCfgType" name="ff" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="PPNetCfgType" name="pp" minOccurs="1" maxOccurs="1"/>
+    </xs:choice>
+    <xs:attribute type="UIntGT0Type" name="attempts" use="required"/>
+    <xs:attribute type="UIntGT0Type" name="attemptEpochs" use="required"/>
+  </xs:complexType>
+
+  <!-- Readout layer - output fields - configuration -->
+  <xs:complexType name="ROutLayerOutputFieldsCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="AloneNameType" name="field" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <!-- Readout layer configuration -->
+  <xs:complexType name="ROutLayerCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="ROutLayerUnitCfgType" name="readoutUnit" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="ROutLayerOutputFieldsCfgType" name="outputFields" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="testDataRatio" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:double">
+          <xs:minExclusive value="0" />
+          <xs:maxInclusive value="0.3333333333333333" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute type="UIntGT0AutoOptionType" name="folds" use="required"/>
+  </xs:complexType>
+
+
+  <!-- ________________________________________NEURAL POOL TYPES_________________________________________________ -->
+  <!-- Pool - input - configuration -->
+  <xs:complexType name="PoolInputCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="RandomValueType" name="weight" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute type="UDoubleLE1Type" name="connectionDensity" use="required"/>
+  </xs:complexType>
+
+  <!-- Pool - interconnection - configuration -->
+  <xs:complexType name="PoolInterconnectionCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="RandomValueType" name="weight" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute type="UDoubleLE1Type" name="density" use="required"/>
+    <xs:attribute type="UDoubleGT0NAOptionType" name="avgDistance" use="required"/>
+    <xs:attribute type="xs:boolean" name="allowSelfConnection" use="required"/>
+  </xs:complexType>
+
+  <!-- Pool - neuron -configuration -->
+  <xs:complexType name="PoolNeuronCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="ActivationCfgType" name="activation" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="RandomValueType" name="bias" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute type="UDoubleType" name="relShare" use="required"/>
+  </xs:complexType>
+
+
+  <!-- Pool - retainment neurons -configuration -->
+  <xs:complexType name="PoolRetNeuronsCfgType">
+    <xs:attribute type="UDoubleLE1Type" name="density" use="required"/>
+    <xs:attribute type="UDoubleLT1Type" name="retainmentMinRate" use="required"/>
+    <xs:attribute type="UDoubleLT1Type" name="retainmentMaxRate" use="required"/>
+  </xs:complexType>
+
+  <!-- Pool configuration -->
+  <xs:complexType name="PoolCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="PoolInputCfgType" name="input" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="PoolNeuronCfgType" name="excitatory" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="PoolNeuronCfgType" name="inhibitory" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="PoolInterconnectionCfgType" name="interconnection" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="PoolRetNeuronsCfgType" name="retainmentNeurons" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="instanceName" use="required" />
+    <xs:attribute type="xs:unsignedInt" name="dimX" use="required" />
+    <xs:attribute type="xs:unsignedInt" name="dimY" use="required" />
+    <xs:attribute type="xs:unsignedInt" name="dimZ" use="required" />
+    <xs:attribute type="xs:boolean" name="routeToReadout" use="optional" default="true"/>
+  </xs:complexType>
+
+  <!-- ________________________________________RESERVOIR TYPES_________________________________________________ -->
+
+  <!-- Reservoir - pools container - configuration -->
+  <xs:complexType name="ReservoirPoolCfgContainerType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="PoolCfgType" name="pool" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Reservoir - pool to pool connection - configuration -->
+  <xs:complexType name="ReservoirPool2PoolConnCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="RandomValueType" name="weight" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="targetPool" use="required"/>
+    <xs:attribute type="UDoubleLE1Type" name="targetConnDensity" use="required"/>
+    <xs:attribute type="xs:string" name="srcPool" use="required"/>
+    <xs:attribute type="UDoubleLE1Type" name="srcConnDensity" use="required"/>
+  </xs:complexType>
+
+  <!-- Reservoir - interpools interconnection container - configuration -->
+  <xs:complexType name="ReservoirPool2PoolConnCfgContainerType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="ReservoirPool2PoolConnCfgType" name="pool2PoolConn" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Reservoir configuration -->
+  <xs:complexType name="ReservoirCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="ReservoirPoolCfgContainerType" name="pools" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="ReservoirPool2PoolConnCfgContainerType" name="pool2PoolConns" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="name" use="required" />
+    <xs:attribute type="InputCodingType" name="inputCoding" use="optional" default="Analog"/>
+    <xs:attribute type="UIntGT0Type" name="inputDuration" use="optional" default="1"/>
+    <xs:attribute type="UDoubleGT0NAOptionType" name="spectralRadius" use="required" />
+  </xs:complexType>
+
+  <!-- ________________________________________STATE MACHINE TYPES_________________________________________________ -->
+  <!-- StateMachine - input fields -configuration -->
+  <xs:complexType name="SMInpFieldsCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="AloneNameType" name="field" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute type="xs:boolean" name="routeToReadout" use="optional" default="false"/>
+  </xs:complexType>
+
+  <!-- StateMachine - reservoirs configuration - container -->
+  <xs:complexType name="SMResCfgContainerType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="ReservoirCfgType" name="reservoirCfg" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- StateMachine - reservoir instance - input fields - configuration -->
+  <xs:complexType name="SMResInstanceInputFieldsCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="AloneNameType" name="field" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- StateMachine - reservoir instance - configuration -->
+  <xs:complexType name="SMResInstanceCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="SMResInstanceInputFieldsCfgType" name="inputFields" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="name" use="required" />
+    <xs:attribute type="xs:string" name="cfg" use="required" />
+    <xs:attribute type="xs:boolean" name="augmentedStates" use="required" />
+  </xs:complexType>
+
+  <!-- StateMachine - reservoir instances - container -->
+  <xs:complexType name="SMResInstanceContainerType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="SMResInstanceCfgType" name="reservoirInstance" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- StateMachine configuration -->
+  <xs:complexType name="SMCfgType">
+    <xs:sequence minOccurs="1" maxOccurs="1">
+      <xs:element type="SMInpFieldsCfgType" name="inputFields" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="SMResCfgContainerType" name="reservoirCfgContainer" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="SMResInstanceContainerType" name="reservoirInstanceContainer" minOccurs="1" maxOccurs="1"/>
+      <xs:element type="ROutLayerCfgType" name="readoutLayer" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute type="NeuralTaskType" name="taskType" use="required"/>
+    <xs:attribute type="xs:int" name="randomizerSeek" use="required" />
+  </xs:complexType>
+
+</xs:schema>
+

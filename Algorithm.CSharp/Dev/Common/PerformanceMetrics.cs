@@ -35,8 +35,9 @@ namespace QuantConnect.Algorithm.CSharp.Dev.Common
             var equityChangePerDay = EquityChangePerDay(trades);
             var equityCurve = equityChangePerDay.Select((ec) => ec.Value).Rollup(0m, (acc, val) => acc + val);
             var years = backTestPeriod.TotalDays / 365d;
+            var startingCapital = 3000;
 
-            return (decimal)(Math.Pow((double)(equityCurve.Last() / equityCurve.First()), 1d / years) - 1d);
+            return (decimal)(Math.Pow((double)((startingCapital + equityCurve.Last()) / (startingCapital + equityCurve.First())), 1d / years) - 1d);
         }
 
         public static decimal RSquared(List<Trade> trades)

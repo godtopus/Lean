@@ -152,6 +152,7 @@
     <Compile Include="Dev\Common\StaticRandom.cs" />
     <Compile Include="Dev\Common\TradeProfile.cs" />
     <Compile Include="Dev\Common\TradingAsset.cs" />
+    <Compile Include="Dev\Extensions\QuantConnectExtensions.cs" />
     <Compile Include="Dev\Indicators\InternalBarStrength.cs" />
     <Compile Include="Dev\Indicators\Alligator.cs" />
     <Compile Include="Dev\Indicators\FractalChannel.cs" />
@@ -162,6 +163,120 @@
     <Compile Include="Dev\Indicators\SuperSmoothedDoubleStochastic.cs" />
     <Compile Include="Dev\Indicators\VolatilityAdjustedMovingAverage.cs" />
     <Compile Include="Dev\Indicators\WilliamsFractals.cs" />
+    <Compile Include="Dev\Models\IModel.cs" />
+    <Compile Include="Dev\RCNet\CsvTools\DelimitedStringValues.cs" />
+    <Compile Include="Dev\RCNet\Extensions\ArrayClassExtensions.cs" />
+    <Compile Include="Dev\RCNet\Extensions\DoubleClassExtensions.cs" />
+    <Compile Include="Dev\RCNet\Extensions\RandomClassExtensions.cs" />
+    <Compile Include="Dev\RCNet\Extensions\RNGCryptoServiceProviderClassExtension.cs" />
+    <Compile Include="Dev\RCNet\Extensions\StringClassExtensions.cs" />
+    <Compile Include="Dev\RCNet\MathTools\BasicStat.cs" />
+    <Compile Include="Dev\RCNet\MathTools\BinDistribution.cs" />
+    <Compile Include="Dev\RCNet\MathTools\BinErrStat.cs" />
+    <Compile Include="Dev\RCNet\MathTools\Bitwise.cs" />
+    <Compile Include="Dev\RCNet\MathTools\Combinatorics.cs" />
+    <Compile Include="Dev\RCNet\MathTools\Differential\ODENumSolver.cs" />
+    <Compile Include="Dev\RCNet\MathTools\Factorial.cs" />
+    <Compile Include="Dev\RCNet\MathTools\Hurst\HurstExpEstim.cs" />
+    <Compile Include="Dev\RCNet\MathTools\Hurst\HurstExpVector.cs" />
+    <Compile Include="Dev\RCNet\MathTools\Hurst\RescalledRange.cs" />
+    <Compile Include="Dev\RCNet\MathTools\Interval.cs" />
+    <Compile Include="Dev\RCNet\MathTools\LinearFit.cs" />
+    <Compile Include="Dev\RCNet\MathTools\MatrixMath\EVD.cs" />
+    <Compile Include="Dev\RCNet\MathTools\MatrixMath\Matrix.cs" />
+    <Compile Include="Dev\RCNet\MathTools\MatrixMath\QRD.cs" />
+    <Compile Include="Dev\RCNet\MathTools\Normalizer.cs" />
+    <Compile Include="Dev\RCNet\MathTools\PhysUnit.cs" />
+    <Compile Include="Dev\RCNet\MathTools\Point2D.cs" />
+    <Compile Include="Dev\RCNet\MathTools\VectorMath\Vector.cs" />
+    <Compile Include="Dev\RCNet\MathTools\WeightedAvg.cs" />
+    <Compile Include="Dev\RCNet\MiscTools\Utils.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\ActivationFactory.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\ActivationSettings.cs">
+      <DependentUpon>ActivationSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\Neural\Activation\AdExpIF.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\AdSimpleIF.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\AnalogActivationFunction.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\BentIdentity.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\Elliot.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\ExpIF.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\Gaussian.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\IActivationFunction.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\Identity.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\ISRU.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\LeakyIF.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\LeakyReLU.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\ODESpikingMembrane.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\Sigmoid.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\SimpleIF.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\Sinc.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\Sinusoid.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\SoftExponential.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\SoftPlus.cs" />
+    <Compile Include="Dev\RCNet\Neural\Activation\TanH.cs" />
+    <Compile Include="Dev\RCNet\Neural\CommonEnums.cs" />
+    <Compile Include="Dev\RCNet\Neural\Data\BundleNormalizer.cs" />
+    <Compile Include="Dev\RCNet\Neural\Data\PatternBundle.cs" />
+    <Compile Include="Dev\RCNet\Neural\Data\PatternDataLoader.cs" />
+    <Compile Include="Dev\RCNet\Neural\Data\TimeSeriesBundle.cs" />
+    <Compile Include="Dev\RCNet\Neural\Data\TimeSeriesDataLoader.cs" />
+    <Compile Include="Dev\RCNet\Neural\Data\ValidationBundle.cs" />
+    <Compile Include="Dev\RCNet\Neural\INonRecurrentNetwork.cs" />
+    <Compile Include="Dev\RCNet\Neural\INonRecurrentNetworkTrainer.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\FF\FeedForwardNetwork.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\FF\FeedForwardNetworkSettings.cs">
+      <DependentUpon>FeedForwardNetworkSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\Neural\Network\FF\LinRegrTrainer.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\FF\LinRegrTrainerSettings.cs">
+      <DependentUpon>LinRegrTrainerSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\Neural\Network\FF\RPropTrainer.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\FF\RPropTrainerSettings.cs">
+      <DependentUpon>RPropTrainerSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\Neural\Network\PP\ParallelPerceptron.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\PP\ParallelPerceptronSettings.cs">
+      <DependentUpon>ParallelPerceptronSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\Neural\Network\PP\PDeltaRuleTrainer.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\PP\PDeltaRuleTrainerSettings.cs">
+      <DependentUpon>PDeltaRuleTrainerSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\Neural\Network\SM\FiringRate.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\INeuron.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\InputAnalogNeuron.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\InputSpikingNeuron.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\ISynapse.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\NeuronPlacement.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\PoolDimensions.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\PoolSettings.cs">
+      <DependentUpon>PoolSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\Neural\Network\SM\ReadoutLayer.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\ReadoutLayerSettings.cs">
+      <DependentUpon>ReadoutLayerSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\Neural\Network\SM\ReadoutUnit.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\Reservoir.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\ReservoirAnalogNeuron.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\ReservoirSettings.cs">
+      <DependentUpon>ReservoirSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\Neural\Network\SM\ReservoirSpikingNeuron.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\SignalConverter.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\StateMachine.cs" />
+    <Compile Include="Dev\RCNet\Neural\Network\SM\StateMachineSettings.cs">
+      <DependentUpon>StateMachineSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\Neural\Network\SM\StaticSynapse.cs" />
+    <Compile Include="Dev\RCNet\Queue\SimpleQueue.cs" />
+    <Compile Include="Dev\RCNet\RandomValue\RandomValueSettings.cs">
+      <DependentUpon>RandomValueSettings.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Dev\RCNet\XmlTools\DocValidator.cs" />
+    <Compile Include="Dev\RCNet\XmlTools\ElemValidator.cs" />
     <Compile Include="Dev\Signals\BollingerBandSignal.cs" />
     <Compile Include="Dev\Signals\CCISignal.cs" />
     <Compile Include="Dev\Signals\FuzzySignal.cs" />
@@ -170,7 +285,6 @@
     <Compile Include="Dev\Signals\RSISignal.cs" />
     <Compile Include="Dev\Signals\SVMSignal.cs" />
     <Compile Include="Dev\Signals\WilliamsFractalsSignal.cs" />
-    <Compile Include="Dev\Statistics\DBA.cs" />
     <Compile Include="Dev\Statistics\MultiDimensionalScaling.cs" />
     <Compile Include="Dev\Strategies\SVMStrategy\SVMStrategy.cs" />
     <Compile Include="Dev\VolatilityModels\AverageTrueRangeVolatilityModel.cs" />
@@ -315,6 +429,42 @@
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Dev\RCNet\Neural\Activation\ActivationSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\Neural\Network\FF\FeedForwardNetworkSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\Neural\Network\FF\LinRegrTrainerSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\Neural\Network\FF\RPropTrainerSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\Neural\Network\PP\ParallelPerceptronSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\Neural\Network\PP\PDeltaRuleTrainerSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\Neural\Network\SM\PoolSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\Neural\Network\SM\ReadoutLayerSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\Neural\Network\SM\ReservoirSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\Neural\Network\SM\StateMachineSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\RandomValue\RandomValueSettings.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Dev\RCNet\RCNetTypes.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -336,6 +486,20 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Dev\RCNet\Docs\Imgs\ConnectionPool1ToPool2.jpg" />
+    <Content Include="Dev\RCNet\Docs\Imgs\ConnectionPool2ToPool1.jpg" />
+    <Content Include="Dev\RCNet\Docs\Imgs\EuclideanDistance.jpg" />
+    <Content Include="Dev\RCNet\Docs\Imgs\ExcitatoryInhibitory.jpg" />
+    <Content Include="Dev\RCNet\Docs\Imgs\Pool.jpg" />
+    <Content Include="Dev\RCNet\Docs\Imgs\PoolInputConnection.jpg" />
+    <Content Include="Dev\RCNet\Docs\Imgs\PoolInterconnection.jpg" />
+    <Content Include="Dev\RCNet\Docs\Imgs\ReservoirComputing.jpg" />
+    <Content Include="Dev\RCNet\Docs\Imgs\SelfConnection.jpg" />
+    <Content Include="Dev\RCNet\Docs\Imgs\StateMachineComponents.jpg" />
+    <Content Include="Dev\RCNet\Docs\Imgs\TanH.jpg" />
+  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

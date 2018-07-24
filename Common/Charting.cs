@@ -301,7 +301,8 @@ namespace QuantConnect
             if (Values.Count >= 4000 && !liveMode)
             {
                 // perform rate limiting in backtest mode
-                return;
+                //return;
+                Console.WriteLine("Turned off Rate Limiting");
             }
 
             var chartPoint = new ChartPoint(time, value);

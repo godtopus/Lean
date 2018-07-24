@@ -17,7 +17,7 @@ namespace QuantConnect.Algorithm.CSharp
 {
     public class SVMStrategy : QCAlgorithm, IRequiredOrderMethods
     {
-        public string[] Forex = { /*"NZDUSD",*/ "EURUSD", "GBPUSD"/*, "AUDUSD",*/ /*"GBPUSD", "EURGBP", "EURCHF", "AUDUSD", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
+        public string[] Forex = { /*"NZDUSD",*/ "EURUSD"/*, "AUDUSD",*/ /*"GBPUSD", "EURGBP", "EURCHF", "AUDUSD", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
 
         public IEnumerable<string> Symbols => Forex;
 
@@ -138,8 +138,8 @@ namespace QuantConnect.Algorithm.CSharp
                     var shortTarget = quoteBars[i].Close - (30m / 10000m);
                     var shortStop = quoteBars[i].Close + (10m / 10000m);
 
-                    var longSetup = stochs[i] > 10 && stochs[i] < 45 && stochs[i] > stochs[i - 1];
-                    var shortSetup = stochs[i] < 90 && stochs[i] > 55 && stochs[i] < stochs[i - 1];
+                    var longSetup = stochs[i] > 10 && stochs[i] < 45 && stochAverage[i] > stochAverage[i - 1];
+                    var shortSetup = stochs[i] < 90 && stochs[i] > 55 && stochAverage[i] < stochAverage[i - 1];
 
                     if (!longSetup && !shortSetup)
                     {
@@ -265,7 +265,7 @@ namespace QuantConnect.Algorithm.CSharp
 
             foreach (var symbol in Symbols)
             {
-                _tradingAssets[symbol].Retrain(allInputs, allOutputs, allWeights);
+                //_tradingAssets[symbol].Retrain(allInputs, allOutputs, allWeights);
             }
 
             //AddData<DailyFx>("DFX", Resolution.Minute, TimeZones.Utc);
@@ -379,9 +379,30 @@ namespace QuantConnect.Algorithm.CSharp
 
         public override void OnEndOfAlgorithm()
         {
-            var tradeStatistics = new TradeStatistics(TradeBuilder.ClosedTrades);
-            var equityChangePerDay = PerformanceMetrics.EquityChangePerDay(TradeBuilder.ClosedTrades);
-            PerformanceMetrics.TRASYCODRAVOPFACOM(tradeStatistics);
+            try
+            {
+                var tradeStatistics = new TradeStatistics(TradeBuilder.ClosedTrades);
+                var tradeSummary = tradeStatistics.GetSummary();
+
+                foreach (KeyValuePair<string, string> kvp in tradeSummary)
+                {
+                    Console.WriteLine("{0} {1}", kvp.Key, kvp.Value);
+                }
+
+                var equityChangePerDay = PerformanceMetrics.EquityChangePerDay(TradeBuilder.ClosedTrades);
+
+                var backtestPeriod = EndDate - StartDate;
+
+                var TRASYCODRAVOPFACOM = PerformanceMetrics.TRASYCODRAVOPFACOM(TradeBuilder.ClosedTrades, backtestPeriod);
+                var lakeRatio = PerformanceMetrics.LakeRatio(TradeBuilder.ClosedTrades);
+                var blissFunction = PerformanceMetrics.BlissFunction(TradeBuilder.ClosedTrades);
+
+                Console.WriteLine("TRASYCODRAVOPFACOM: {0} Lake Ratio: {1} Bliss Function: {2}", TRASYCODRAVOPFACOM, lakeRatio, blissFunction);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
 
         /*public override void OnMarginCallWarning()

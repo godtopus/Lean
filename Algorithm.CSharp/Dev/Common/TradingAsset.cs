@@ -111,8 +111,11 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 tradeProfile.ExitSignal.Scan(data);
 
-                if (tradeProfile.ExitSignal.Signal == SignalType.Exit
-                    || EnterSignal.Signal == SignalType.Exit
+                var orderEvent = tradeProfile.OpenTicket.OrderEvents.FirstOrDefault((oe) => oe.Status == OrderStatus.Filled);
+                var timedExit = orderEvent != null && data.EndTime.Subtract(orderEvent.UtcTime).CompareTo(TimeSpan.FromHours(1)) > 0;
+
+                if ((tradeProfile.ExitSignal.Signal == SignalType.Exit
+                    || EnterSignal.Signal == SignalType.Exit || timedExit)
                     /*|| (tradeProfile.OpenTicket.QuantityFilled > 0 && data.Price <= tradeProfile.StopTicket.Get(OrderField.StopPrice)
 	            		|| tradeProfile.OpenTicket.QuantityFilled < 0 && data.Price >= tradeProfile.StopTicket.Get(OrderField.StopPrice)))*/
                     && tradeProfile.StopTicket.Status != OrderStatus.Filled
