@@ -287,6 +287,7 @@
     <Compile Include="Dev\Signals\SVMSignal.cs" />
     <Compile Include="Dev\Signals\WilliamsFractalsSignal.cs" />
     <Compile Include="Dev\Statistics\MultiDimensionalScaling.cs" />
+    <Compile Include="Dev\Strategies\ForexCarryTradeStrategy\ForexCarryTradeStrategy.cs" />
     <Compile Include="Dev\Strategies\SVMStrategy\SVMStrategy.cs" />
     <Compile Include="Dev\VolatilityModels\AverageTrueRangeVolatilityModel.cs" />
     <Compile Include="Dev\VolatilityModels\ThreeSigmaVolatilityModel.cs" />

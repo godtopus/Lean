@@ -34,6 +34,7 @@ namespace QuantConnect.Algorithm.CSharp
         private Stochastic _stoch;
         private HullMovingAverage _StochMA;
         private RollingWindow<double> _rolling;
+        private ExponentialMovingAverage _ema;
 
         private SecurityHolding _securityHolding;
 
@@ -44,12 +45,13 @@ namespace QuantConnect.Algorithm.CSharp
         readonly bool _pcaTransform = false;
         readonly bool _debug = false;
 
-        public SVMSignal(QuoteBarConsolidator consolidator, Stochastic stoch, HullMovingAverage stochMA, RollingWindow<double> rolling, SecurityHolding securityHolding, SVMStrategy qcAlgorithm)
+        public SVMSignal(QuoteBarConsolidator consolidator, Stochastic stoch, HullMovingAverage stochMA, RollingWindow<double> rolling, ExponentialMovingAverage ema, SecurityHolding securityHolding, SVMStrategy qcAlgorithm)
         {
             _consolidator = consolidator;
             _stoch = stoch;
             _StochMA = stochMA;
             _rolling = rolling;
+            _ema = ema;
             _securityHolding = securityHolding;
             _qcAlgorithm = qcAlgorithm;
 
@@ -60,7 +62,7 @@ namespace QuantConnect.Algorithm.CSharp
                     var filtered = _rolling.TakeWhile((s) => args.Value > 50 ? s > 50 : args.Value < 50 ? s < 50 : false);
 
                     //Console.WriteLine("{0}, {1}, {2}", filtered.Count(), _rolling.Count(), _stoch.Current.Value);
-                    var inputs = new double[] { filtered.Average(), filtered.Count(), (double)args.Value };
+                    var inputs = new double[] { filtered.Average(), filtered.Count(), (double) (_consolidator.Consolidated.Value / _ema.Current.Value) };
                     _inputs.Add(inputs);
                     inputs = Accord.Statistics.Tools.ZScores(_inputs.ToArray()).Last();
                     _inputs.RemoveAt(_inputs.Count - 1);
@@ -94,7 +96,7 @@ namespace QuantConnect.Algorithm.CSharp
                     }
 
                     // EURUSD 0.9999
-                    var probabilityFilter = logLikelihood >= 6;//probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
+                    var probabilityFilter = logLikelihood >= 9;//probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
 
                     var longExit = Signal == SignalType.Long && prediction == 0;
                     var shortExit = Signal == SignalType.Short && prediction == 1;
@@ -237,7 +239,7 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 Learner = (param) => new SequentialMinimalOptimization<Gaussian<Polynomial>>()
                 {
-                    Complexity = 3,
+                    Complexity = 10,
                     Tolerance = 0.001,
                     Epsilon = 0.000001,
                     Kernel = new Gaussian<Polynomial>(new Polynomial(degree: 3), sigma: 4.2), //new Additive(new Gaussian(0.01)),
@@ -250,7 +252,7 @@ namespace QuantConnect.Algorithm.CSharp
 
             //teacher.ParallelOptions.MaxDegreeOfParallelism = 4;
 
-            _svm = teacher.Learn(trainingInputs, trainingOutputs, trainingWeights);
+            _svm = teacher.Learn(trainingInputs, trainingOutputs);
 
             var calibrationInputs = sellSamples.Skip(trainingSamples / 2)
                                                .Take(calibrationSamples / 2)

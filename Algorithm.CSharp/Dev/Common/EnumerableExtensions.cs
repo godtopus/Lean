@@ -20,6 +20,11 @@ namespace QuantConnect.Algorithm.CSharp.Dev.Common
             }
         }
 
+        public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int n)
+        {
+            return source.Skip(Math.Max(0, source.Count() - n));
+        }
+
         public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source)
         {
             return source.ShuffleIterator();
