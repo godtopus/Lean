@@ -1,5 +1,4 @@
 ﻿using System;
-using Accord.Statistics.Models.Markov;
 using Accord.Statistics.Models.Markov.Learning;
 using QuantConnect.Indicators;
 

@@ -28,12 +28,14 @@ namespace QuantConnect.Algorithm.CSharp
 
         public void Liquidate()
         {
+            RemovePendingLimitOrders();
             MarkStopTicketsFilled();
 
             foreach (var tradeProfile in _tradeProfiles.Where(x => !x.IsTradeFinished))
             {
                 tradeProfile.ExitTicket = _orderMethods.MarketOrder(_symbol, -(int)tradeProfile.OpenTicket.QuantityFilled);
                 tradeProfile.StopTicket.Cancel();
+                tradeProfile.IsTradeFinished = true;
             }
 
             RemoveAllFinishedTrades();
@@ -58,6 +60,8 @@ namespace QuantConnect.Algorithm.CSharp
                 tradeProfile.UpdateStopLoss(data);
                 tradeProfile.CurrentPrice = data.Price;
             }
+
+            RemovePendingLimitOrders(data);
             MarkStopTicketsFilled();
             EnterTradeSignal(data, isWarmingUp);
             ExitTradeSignal(data);
@@ -82,10 +86,13 @@ namespace QuantConnect.Algorithm.CSharp
 
                 profile.ExitSignal = ExitSignal.ExitSignalFactory(profile);
 
-                if (profile.Quantity > 0 && _security.Exchange.ExchangeOpen)
+                if (profile.Quantity > 0 && _security.Exchange.ExchangeOpen && _tradeProfiles.Count == 0)
                 {
                     profile.OpenTicket = _orderMethods.MarketOrder(_symbol, (int)EnterSignal.Signal * profile.Quantity);
-                    //profile.OpenTicket = _orderMethods.LimitOrder(_symbol, (int)EnterSignal.Signal * profile.Quantity, data.Price - (int)EnterSignal.Signal * (10m / 10000m));
+                    var askLimit = data.Ask.Close - (2m / 10000m);
+                    var bidLimit = data.Bid.Close + (2m / 10000m);
+                    var limitPrice = EnterSignal.Signal == SignalType.Long ? askLimit : bidLimit;
+                    //profile.OpenTicket = _orderMethods.LimitOrder(_symbol, (int)EnterSignal.Signal * profile.Quantity, OrderUtil.RoundOrderPrices(limitPrice));
                     profile.StopTicket = _orderMethods.StopMarketOrder(_symbol, -(int)EnterSignal.Signal * profile.Quantity,
                         OrderUtil.RoundOrderPrices(profile.OpenTicket.AverageFillPrice - (int)EnterSignal.Signal * profile.DeltaStopLoss));
 
@@ -116,11 +123,15 @@ namespace QuantConnect.Algorithm.CSharp
                 try
                 {
                     var orderEvent = tradeProfile.OpenTicket.OrderEvents.FirstOrDefault((oe) => oe.Status == OrderStatus.Filled);
-                    var endTime = data.EndTime.ToUniversalTime();
-                    var orderEventTime = orderEvent.UtcTime.Subtract(TimeSpan.FromHours(6));
-                    var span = endTime.Subtract(orderEventTime);
-                    var timeComparison = span.CompareTo(TimeSpan.FromMinutes(90));
-                    timedExit = timeComparison > 0 && OrderUtil.IsUnprofitable(data.Close, orderEvent);
+
+                    if (orderEvent != null)
+                    {
+                        var endTime = data.EndTime.ToUniversalTime();
+                        var orderEventTime = orderEvent.UtcTime.Subtract(TimeSpan.FromHours(6));
+                        var span = endTime.Subtract(orderEventTime);
+                        var timeComparison = span.CompareTo(TimeSpan.FromMinutes(180));
+                        timedExit = timeComparison > 0 && OrderUtil.IsUnprofitable(data.Close, orderEvent);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -144,10 +155,31 @@ namespace QuantConnect.Algorithm.CSharp
 
         public void MarkStopTicketsFilled()
         {
-            foreach (var tradeProfile in _tradeProfiles)
+            foreach (var tradeProfile in _tradeProfiles.Where((oe) => oe.StopTicket.Status == OrderStatus.Filled))
             {
-                if (tradeProfile.StopTicket.Status == OrderStatus.Filled)
+                tradeProfile.IsTradeFinished = true;
+            }
+        }
+
+        public void RemovePendingLimitOrders(QuoteBar data = null)
+        {
+            foreach (var tradeProfile in _tradeProfiles.Where((oe) => oe.OpenTicket.OrderType == OrderType.Limit))
+            {
+                var timeComparison = data == null ? 1 : -1;
+
+                if (data != null)
                 {
+                    var orderEvent = tradeProfile.OpenTicket.OrderEvents.First();
+                    var endTime = data.EndTime.ToUniversalTime();
+                    var orderEventTime = orderEvent.UtcTime.Subtract(TimeSpan.FromHours(6));
+                    var span = endTime.Subtract(orderEventTime);
+                    timeComparison = span.CompareTo(TimeSpan.FromMinutes(15));
+                }
+
+                if (tradeProfile.OpenTicket.Status != OrderStatus.Filled && timeComparison >= 0)
+                {
+                    tradeProfile.OpenTicket.Cancel();
+                    tradeProfile.StopTicket.Cancel();
                     tradeProfile.IsTradeFinished = true;
                 }
             }

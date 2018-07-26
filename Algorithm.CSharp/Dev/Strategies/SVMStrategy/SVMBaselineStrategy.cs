@@ -15,15 +15,15 @@ using QuantConnect.Algorithm.CSharp.Dev.Common;
 
 namespace QuantConnect.Algorithm.CSharp
 {
-    public class SVMStrategy : QCAlgorithm, IRequiredOrderMethods
+    public class SVMBaselineStrategy : QCAlgorithm, IRequiredOrderMethods
     {
-        public string[] Forex = { /*"NZDUSD",*/ "EURUSD"/*, "AUDUSD",*/ /*"GBPUSD", "EURGBP", "EURCHF", "AUDUSD", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
+        public string[] Forex = { "EURUSD", "AUDUSD", "GBPUSD", "EURGBP"/*"NZDUSD", "EURGBP", "EURCHF", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
 
         public IEnumerable<string> Symbols => Forex;
 
         private decimal _maximumTradeSize = 200m;
-        private decimal _targetProfitLoss = 2m;
-        private decimal _maximumTradeRisk = 2000m;
+        private decimal _targetProfitLoss = 4m;
+        private decimal _maximumTradeRisk = 3000m;
 
         private Resolution _dataResolution = Resolution.Minute;
         private Dictionary<string, TradingAsset> _tradingAssets = new Dictionary<string, TradingAsset>();
@@ -41,10 +41,6 @@ namespace QuantConnect.Algorithm.CSharp
 
             SetBrokerageMessageHandler(new CustomBrokerageMessageHandler(this));
 
-            var allInputs = new List<double[]>();
-            var allOutputs = new List<int>();
-            var allWeights = new List<double>();
-
             foreach (var symbol in Symbols)
             {
                 AddForex(symbol, _dataResolution, Market.Oanda, false, 1m);
@@ -53,159 +49,18 @@ namespace QuantConnect.Algorithm.CSharp
                 //Securities[symbol].SlippageModel = new ConstantSlippageModel(0m);
                 SetBrokerageModel(BrokerageName.OandaBrokerage);
 
-                /************ TRAINING ************/
-                var trainingResolution = Resolution.Minute;
-                /*var slowT = HMA(symbol, 28, trainingResolution, Field.Close);
-                var slowSlopeT = new InstantTrend(symbol, 5).Of(slowT);
-                var returnT = LOGR(symbol, 3, trainingResolution, Field.Close);
-                var returnSlopeT = LSMA(symbol, 5, trainingResolution).Of(returnT);*/
+                var consolidator = new QuoteBarConsolidator(TimeSpan.FromMinutes(20));
+                var stoch = new Stochastic(symbol, 10, 3, 3);
+                var stochMA = new ExponentialMovingAverage(symbol, 25).Of(stoch);
+                var stochEmaLSMA = new LeastSquaresMovingAverage(symbol, 5).Of(stochMA);
+                var ema = new ExponentialMovingAverage(symbol, 30);
+                var emaMA = new LeastSquaresMovingAverage(symbol, 5).Of(ema);
 
-                var consolidatorT = new QuoteBarConsolidator(TimeSpan.FromMinutes(15));
-                var stochT = new Stochastic(symbol, 14, 3, 3);
-                var stochTMA = new HullMovingAverage(symbol, 3).Of(stochT);
-                var emaT = new ExponentialMovingAverage(symbol, 40);
-                RegisterIndicator(symbol, stochT, consolidatorT);
-                RegisterIndicator(symbol, emaT, consolidatorT);
-                SubscriptionManager.AddConsolidator(symbol, consolidatorT);
+                var rollingStochMA = HistoryTracker.Track(stochMA);
+                var rollingEmaSlope = HistoryTracker.Track(emaMA.Slope);
 
-                var historyT = History<QuoteBar>(symbol, TimeSpan.FromDays(500), trainingResolution);
+                var shortTermMA = EMA(symbol, 30, Resolution.Minute, Field.Close);
 
-                var quoteBars = new List<QuoteBar>();
-                var stochs = new List<double>();
-                var rollingStochs = new RollingWindow<double>(1000);
-                var stochsMA = new List<double>();
-                var emas = new List<double>();
-                var stochCount = new List<double>();
-                var stochAverage = new List<double>();
-
-                //consolidatorT.DataConsolidated += (sender, args) => quoteBars.Add(args);
-                stochTMA.Updated += (sender, args) =>
-                {
-                    if (!stochTMA.IsReady || !emaT.IsReady)
-                    {
-                        return;
-                    }
-
-                    quoteBars.Add((QuoteBar)consolidatorT.Consolidated);
-                    stochs.Add((double)stochT.Current.Value);
-                    rollingStochs.Add((double)args.Value);
-                    stochsMA.Add((double)args.Value);
-                    emas.Add((double)emaT.Current.Value);
-
-                    var filtered = rollingStochs.TakeWhile((s) => args.Value > 50 ? s > 50 : args.Value < 50 ? s < 50 : false);
-                    stochCount.Add(filtered.Count());
-
-                    try
-                    {
-                        stochAverage.Add(filtered.Average());
-                    }
-                    catch(Exception ex)
-                    {
-                        stochAverage.Add(0);
-                    }
-                };
-
-                foreach (var bar in historyT)
-                {
-                    consolidatorT.Update(bar);
-                }
-
-                Console.WriteLine("{0} {1} {2} {3} {4}", quoteBars.Count, stochs.Count, stochCount.Count, stochAverage.Count, emas.Count);
-
-                var inputs = new List<double[]>();
-                var outputs = new List<int>();
-                var weights = new List<double>();
-
-                for (var i = 1; i < quoteBars.Count; i++)
-                {
-                    var longTarget = quoteBars[i].Close + (30m / 10000m);
-                    var longStop = quoteBars[i].Close - (10m / 10000m);
-                    var shortTarget = quoteBars[i].Close - (30m / 10000m);
-                    var shortStop = quoteBars[i].Close + (10m / 10000m);
-
-                    var longSetup = stochs[i] >= 35 && stochsMA[i] > stochsMA[i - 1] && (double)quoteBars[i].Close > emas[i];
-                    var shortSetup = stochs[i] <= 65 && stochs[i] > 0 && stochsMA[i] < stochsMA[i - 1] && (double)quoteBars[i].Close < emas[i];
-
-                    if (!longSetup && !shortSetup)
-                    {
-                        continue;
-                    }
-
-                    for (var j = i + 1; j < quoteBars.Count; j++)
-                    {
-                        var current = quoteBars[j];
-                        if (current.High >= longTarget && current.Low > longStop && longSetup)
-                        {
-                            inputs.Add(new double[] { stochAverage[i], stochCount[i], (double)quoteBars[i].Close / emas[i] });
-                            outputs.Add(1);
-
-                            var profit = current.High - quoteBars[i].Close;
-                            /*for (var k = j + 1; k < quoteBars.Count; k++)
-                            {
-
-                            }*/
-                            weights.Add((double) (1m - (50m / 10000m) / profit));
-
-                            //i = j;
-                            break;
-                        }
-                        else if (current.Low <= shortTarget && current.High < shortStop && shortSetup)
-                        {
-                            inputs.Add(new double[] { stochAverage[i], stochCount[i], (double)quoteBars[i].Close / emas[i] });
-                            outputs.Add(0);
-
-                            var profit = quoteBars[i].Close - current.Low;
-                            /*for (var k = j + 1; k < quoteBars.Count; k++)
-                            {
-
-                            }*/
-                            weights.Add((double) (1m - (50m / 10000m) / profit));
-                            //i = j;
-                            break;
-                        }
-                        else if ((current.Low <= longStop && longSetup) || (current.High >= shortStop && shortSetup))
-                        {
-                            //inputs.Add(new double[] { stochAverage[i] / stochs[i], stochCount[i], stochAverage[i] });
-                            //outputs.Add(2);
-                            //i = j;
-                            break;
-                        }
-                        /*else if (j - i > 4 * 8)
-                        {
-                            inputs.Add(new double[] { stochs[i], stochCount[i], stochAverage[i] });
-                            outputs.Add(0);
-                            //i = j;
-                            break;
-                        }*/
-                    }
-                }
-
-                allInputs.AddRange(inputs);
-                allOutputs.AddRange(outputs);
-                allWeights.AddRange(weights);
-
-                for (var i = 0; i < inputs.Count; i++)
-                {
-                    //Console.WriteLine("Input: " + inputs[i][0] + " " + inputs[i][1] + " " + inputs[i][2] + " Output: " + outputs[i]);
-                }
-
-                var none = outputs.Where((o) => o == 2).Count();
-                var sell = outputs.Where((o) => o == 0).Count();
-                var buy = outputs.Where((o) => o == 1).Count();
-
-                Console.WriteLine("Total: {0} None: {1} Short: {2} Long: {3}", outputs.Count, none, sell, buy);
-
-                /************ HMA ************/
-                /*var slow = HMA(symbol, 28, trainingResolution, Field.Close);
-                var slowSlope = new InstantTrend(symbol, 5).Of(slow);
-                var logReturns = LOGR(symbol, 3, trainingResolution, Field.Close);
-                var returnSlope = LSMA(symbol, 5, trainingResolution).Of(logReturns);*/
-
-                var consolidator = new QuoteBarConsolidator(TimeSpan.FromMinutes(15));
-                var stoch = new Stochastic(symbol, 14, 3, 3);
-                var stochMA = new HullMovingAverage(symbol, 2).Of(stoch);
-                var ema = new ExponentialMovingAverage(symbol, 40);
-                var rolling = new RollingWindow<double>(1000);
                 RegisterIndicator(symbol, stoch, consolidator);
                 RegisterIndicator(symbol, ema, consolidator);
                 SubscriptionManager.AddConsolidator(symbol, consolidator);
@@ -215,30 +70,40 @@ namespace QuantConnect.Algorithm.CSharp
 
                 stochMA.Updated += (sender, args) =>
                 {
-                    rolling.Add((double)args.Value);
-
                     if (Securities[symbol].Price > 0)
                     {
-                        //Plot("Plotter", "Price", Securities["EURUSD"].Price);
-                        Plot("Indicator", "STO", rolling[0]);
+                        Plot("Indicator", "STO", rollingStochMA[0]);
+                    }
+                };
+
+                stochEmaLSMA.Updated += (sender, args) =>
+                {
+                    if (Securities[symbol].Price > 0)
+                    {
+                        Plot("IndicatorTrend", "STO", stochEmaLSMA.Slope);
+                    }
+                };
+
+                emaMA.Updated += (sender, args) =>
+                {
+                    if (Securities[symbol].Price > 0)
+                    {
+                        Plot("Trend", "LSMA", emaMA.Slope);
                     }
                 };
 
                 var std = ATR(symbol, 100, MovingAverageType.DoubleExponential, _dataResolution);
 
-                var history = History<QuoteBar>(symbol, TimeSpan.FromDays(20), trainingResolution);
+                var history = History<QuoteBar>(symbol, TimeSpan.FromDays(20), _dataResolution);
 
                 foreach (var bar in history)
                 {
-                    //slow.Update(bar.EndTime, bar.Close);
-                    //logReturns.Update(bar.EndTime, bar.Close);
                     std.Update(bar);
                     consolidator.Update(bar);
+                    shortTermMA.Update(bar.EndTime, bar.Close);
                 }
 
-                var signal = new SVMSignal(consolidator, stoch, stochMA, rolling, ema, Portfolio[symbol], this);
-                signal.TrainSVM(inputs, outputs, weights);
-                //signal.TrainNN(inputs, outputs, weights);
+                var signal = new SVMBaselineSignal(consolidator, stoch, stochMA, rollingStochMA, stochEmaLSMA, ema, emaMA, rollingEmaSlope, shortTermMA, Portfolio[symbol], this);
 
                 Securities[symbol].VolatilityModel = new AverageTrueRangeVolatilityModel(std);
                 _tradingAssets.Add(symbol,
@@ -251,14 +116,9 @@ namespace QuantConnect.Algorithm.CSharp
                     ));
             }
 
-            foreach (var symbol in Symbols)
-            {
-                //_tradingAssets[symbol].Retrain(allInputs, allOutputs, allWeights);
-            }
-
             //AddData<DailyFx>("DFX", Resolution.Second, TimeZones.Utc);
 
-            Schedule.On(DateRules.Every(DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday),
+            Schedule.On(DateRules.Every(DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday),
                 TimeRules.At(7, 0, TimeZones.London), () =>
                 {
                     var tradeableDay = TradingCalendar.GetTradingDay().BusinessDay;
@@ -272,7 +132,7 @@ namespace QuantConnect.Algorithm.CSharp
                 });
 
             Schedule.On(DateRules.Every(DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday),
-                TimeRules.At(18, 0, TimeZones.London), () =>
+                TimeRules.At(20, 0, TimeZones.London), () =>
                 {
                     foreach (var s in Symbols)
                     {
@@ -302,6 +162,14 @@ namespace QuantConnect.Algorithm.CSharp
             Chart indicator = new Chart("Indicator");
             indicator.AddSeries(new Series("STO", SeriesType.Line, 0));
             AddChart(indicator);
+
+            Chart indicatorTrend = new Chart("IndicatorTrend");
+            indicatorTrend.AddSeries(new Series("STO", SeriesType.Line, 0));
+            AddChart(indicatorTrend);
+
+            Chart trend = new Chart("Trend");
+            trend.AddSeries(new Series("LSMA", SeriesType.Line, 0));
+            AddChart(trend);
 
             Chart prediction = new Chart("Prediction");
             prediction.AddSeries(new Series("Pred", SeriesType.Bar, 0));
@@ -373,11 +241,11 @@ namespace QuantConnect.Algorithm.CSharp
                     //Plot("Plotter", "Price", Securities[symbol].Price);
                     //Plot("Plotter", "STO", _stoch[symbol]);
 
-                    if (ticket.OrderType == OrderType.Market && orderEvent.Direction == OrderDirection.Buy)
+                    if ((ticket.OrderType == OrderType.Market || ticket.OrderType == OrderType.Limit) && orderEvent.Direction == OrderDirection.Buy)
                     {
                         Plot("Plotter", "Buy", ticket.AverageFillPrice);
                     }
-                    else if (ticket.OrderType == OrderType.Market && orderEvent.Direction == OrderDirection.Sell)
+                    else if ((ticket.OrderType == OrderType.Market || ticket.OrderType == OrderType.Limit) && orderEvent.Direction == OrderDirection.Sell)
                     {
                         Plot("Plotter", "Sell", ticket.AverageFillPrice);
                     }

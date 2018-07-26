@@ -25,7 +25,7 @@ namespace QuantConnect.Algorithm.CSharp
 {
     public class SVMSignal : IRetrainable
     {
-        private MulticlassSupportVectorMachine<Gaussian<Polynomial>> _svm;
+        private MulticlassSupportVectorMachine<Gaussian> _svm;
         private ActivationNetwork _dbn;
         private PrincipalComponentAnalysis _pca;
         private GeneralConfusionMatrix _cm;
@@ -61,8 +61,10 @@ namespace QuantConnect.Algorithm.CSharp
                 {
                     var filtered = _rolling.TakeWhile((s) => args.Value > 50 ? s > 50 : args.Value < 50 ? s < 50 : false);
 
+                    var currentQuote = (QuoteBar)_consolidator.Consolidated;
+
                     //Console.WriteLine("{0}, {1}, {2}", filtered.Count(), _rolling.Count(), _stoch.Current.Value);
-                    var inputs = new double[] { filtered.Average(), filtered.Count(), (double) (_consolidator.Consolidated.Value / _ema.Current.Value) };
+                    var inputs = new double[] { filtered.Average(), filtered.Count(), (double) (currentQuote.Close / _ema.Current.Value) };
                     _inputs.Add(inputs);
                     inputs = Accord.Statistics.Tools.ZScores(_inputs.ToArray()).Last();
                     _inputs.RemoveAt(_inputs.Count - 1);
@@ -98,10 +100,13 @@ namespace QuantConnect.Algorithm.CSharp
                     // EURUSD 0.9999
                     var probabilityFilter = logLikelihood >= 9;//probability >= 0.999999;// && _previousPredictions.IsReady && _previousPredictions.All((p) => p == prediction);
 
-                    var longExit = Signal == SignalType.Long && prediction == 0;
-                    var shortExit = Signal == SignalType.Short && prediction == 1;
+                    var aboveEma = currentQuote.Close > _ema.Current.Value;
+                    var belowEma = currentQuote.Close < _ema.Current.Value;
 
-                    if (!_securityHolding.Invested && probabilityFilter && prediction == 1 && _rolling[0] > rolling[1])
+                    var longExit = Signal == SignalType.Long && belowEma;//prediction == 0;
+                    var shortExit = Signal == SignalType.Short && aboveEma;//prediction == 1;
+
+                    if (!_securityHolding.Invested && probabilityFilter && prediction == 1 && _rolling[0] > rolling[1] && aboveEma)
                     {
                         Signal = Signal != SignalType.PendingLong ? SignalType.PendingLong : SignalType.Long;
 
@@ -112,7 +117,7 @@ namespace QuantConnect.Algorithm.CSharp
                             Console.WriteLine("Long Time: {0} Price: {1}", _consolidator.Consolidated.Time, _consolidator.Consolidated.Value);
                         }
                     }
-                    else if (!_securityHolding.Invested && probabilityFilter && prediction == 0 && _rolling[0] < rolling[1])
+                    else if (!_securityHolding.Invested && probabilityFilter && prediction == 0 && _rolling[0] < rolling[1] && belowEma)
                     {
                         Signal = Signal != SignalType.PendingShort ? SignalType.PendingShort : SignalType.Short;
 
@@ -235,14 +240,14 @@ namespace QuantConnect.Algorithm.CSharp
             //inputs = Tools.Center(inputs);
             //inputs = Tools.Whitening(inputs);
 
-            var teacher = new MulticlassSupportVectorLearning<Gaussian<Polynomial>>()
+            var teacher = new MulticlassSupportVectorLearning<Gaussian>()
             {
-                Learner = (param) => new SequentialMinimalOptimization<Gaussian<Polynomial>>()
+                Learner = (param) => new SequentialMinimalOptimization<Gaussian>()
                 {
                     Complexity = 10,
                     Tolerance = 0.001,
                     Epsilon = 0.000001,
-                    Kernel = new Gaussian<Polynomial>(new Polynomial(degree: 3), sigma: 4.2), //new Additive(new Gaussian(0.01)),
+                    //Kernel = new Gaussian<Polynomial>(new Polynomial(degree: 3), sigma: 4.2), //new Additive(new Gaussian(0.01)),
                     Strategy = SelectionStrategy.WorstPair,
                     //UseKernelEstimation = true,
                     //UseComplexityHeuristic = true,
@@ -309,10 +314,10 @@ namespace QuantConnect.Algorithm.CSharp
                 inputs = _pca.Transform(inputs);
             }
 
-            var calibration = new MulticlassSupportVectorLearning<Gaussian<Polynomial>>()
+            var calibration = new MulticlassSupportVectorLearning<Gaussian>()
             {
                 Model = _svm,
-                Learner = (param) => new ProbabilisticOutputCalibration<Gaussian<Polynomial>>()
+                Learner = (param) => new ProbabilisticOutputCalibration<Gaussian>()
                 {
                     Model = param.Model
                 }

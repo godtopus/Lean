@@ -1,6 +1,7 @@
 ﻿using QuantConnect.Data;
 using QuantConnect.Data.Consolidators;
 using QuantConnect.Indicators;
+using System;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -11,6 +12,14 @@ namespace QuantConnect.Algorithm.CSharp
         {
             var window = new RollingWindow<IndicatorDataPoint>(historyLength);
             indicator.Updated += (sender, args) => window.Add(indicator.Current);
+            return window;
+        }
+
+        public static RollingWindow<decimal> Track<T, R>(IndicatorBase<T> indicator, Func<IndicatorBase<T>, decimal> projection, int historyLength = 8)
+            where T : BaseData
+        {
+            var window = new RollingWindow<decimal>(historyLength);
+            indicator.Updated += (sender, args) => window.Add(projection(indicator));
             return window;
         }
 
