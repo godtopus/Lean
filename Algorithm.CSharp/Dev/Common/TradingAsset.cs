@@ -94,7 +94,7 @@ namespace QuantConnect.Algorithm.CSharp
                     var limitPrice = EnterSignal.Signal == SignalType.Long ? askLimit : bidLimit;
                     //profile.OpenTicket = _orderMethods.LimitOrder(_symbol, (int)EnterSignal.Signal * profile.Quantity, OrderUtil.RoundOrderPrices(limitPrice));
                     profile.StopTicket = _orderMethods.StopMarketOrder(_symbol, -(int)EnterSignal.Signal * profile.Quantity,
-                        OrderUtil.RoundOrderPrices(profile.OpenTicket.AverageFillPrice - (int)EnterSignal.Signal * profile.DeltaStopLoss));
+                        OrderUtil.RoundOrderPrices(_security, profile.OpenTicket.AverageFillPrice - (int)EnterSignal.Signal * profile.DeltaStopLoss));
 
                     /*Console.WriteLine("{0} {1} {2} {3}",
                         profile.OpenTicket.OrderEvents.Select((oe) => oe.Direction).First() == OrderDirection.Buy ? "Buy " : "Sell",

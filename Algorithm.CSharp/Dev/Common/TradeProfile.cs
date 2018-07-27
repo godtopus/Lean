@@ -77,7 +77,7 @@ namespace QuantConnect.Algorithm.CSharp
                 StopTicket.Update(
                     new UpdateOrderFields
                     {
-                        StopPrice = OrderUtil.RoundOrderPrices((TradeDirection > 0 ? latestQuote.Bid.Close : latestQuote.Ask.Close) + TradeDirection * _trailingStop)
+                        StopPrice = OrderUtil.RoundOrderPrices(null, (TradeDirection > 0 ? latestQuote.Bid.Close : latestQuote.Ask.Close) + TradeDirection * _trailingStop)
                     }
                 );
             }

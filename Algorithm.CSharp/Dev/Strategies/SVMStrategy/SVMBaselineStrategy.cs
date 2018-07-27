@@ -17,12 +17,14 @@ namespace QuantConnect.Algorithm.CSharp
 {
     public class SVMBaselineStrategy : QCAlgorithm, IRequiredOrderMethods
     {
-        public string[] Forex = { "EURUSD", "AUDUSD", "GBPUSD", "EURGBP"/*"NZDUSD", "EURGBP", "EURCHF", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
+        // Shortable: EURGBP, USDCAD
+
+        public string[] Forex = { "EURUSD", "AUDUSD", "GBPUSD", "EURGBP", "USDCAD", "NZDUSD", "USDCHF" /*"EURCHF", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
 
         public IEnumerable<string> Symbols => Forex;
 
         private decimal _maximumTradeSize = 200m;
-        private decimal _targetProfitLoss = 4m;
+        private decimal _targetProfitLoss = 20m;
         private decimal _maximumTradeRisk = 3000m;
 
         private Resolution _dataResolution = Resolution.Minute;
@@ -52,12 +54,13 @@ namespace QuantConnect.Algorithm.CSharp
                 var consolidator = new QuoteBarConsolidator(TimeSpan.FromMinutes(20));
                 var stoch = new Stochastic(symbol, 10, 3, 3);
                 var stochMA = new ExponentialMovingAverage(symbol, 25).Of(stoch);
-                var stochEmaLSMA = new LeastSquaresMovingAverage(symbol, 5).Of(stochMA);
+                var stochEmaLSMA = new LeastSquaresMovingAverage(symbol, 15).Of(stochMA);
                 var ema = new ExponentialMovingAverage(symbol, 30);
                 var emaMA = new LeastSquaresMovingAverage(symbol, 5).Of(ema);
 
                 var rollingStochMA = HistoryTracker.Track(stochMA);
                 var rollingEmaSlope = HistoryTracker.Track(emaMA.Slope);
+                var rollingStochEmaSlope = HistoryTracker.Track(stochEmaLSMA.Slope);
 
                 var shortTermMA = EMA(symbol, 30, Resolution.Minute, Field.Close);
 
@@ -67,6 +70,13 @@ namespace QuantConnect.Algorithm.CSharp
 
                 _stoch[symbol] = stoch;
                 _ema[symbol] = ema;
+
+                var consolidatorDaily = new QuoteBarConsolidator(TimeSpan.FromHours(6));
+                var dailyMA = new ExponentialMovingAverage(symbol, 5);
+                var dailyEmaLSMA = new LeastSquaresMovingAverage(symbol, 3).Of(dailyMA);
+
+                RegisterIndicator(symbol, dailyMA, consolidatorDaily);
+                SubscriptionManager.AddConsolidator(symbol, consolidatorDaily);
 
                 stochMA.Updated += (sender, args) =>
                 {
@@ -84,11 +94,20 @@ namespace QuantConnect.Algorithm.CSharp
                     }
                 };
 
-                emaMA.Updated += (sender, args) =>
+                /*emaMA.Updated += (sender, args) =>
                 {
                     if (Securities[symbol].Price > 0)
                     {
                         Plot("Trend", "LSMA", emaMA.Slope);
+                    }
+                };*/
+
+                dailyEmaLSMA.Updated += (sender, args) =>
+                {
+                    if (Securities[symbol].Price > 0)
+                    {
+                        Plot("Trend", "LSMA", dailyEmaLSMA.Slope);
+                        Plot("Trend", "EMA", dailyMA);
                     }
                 };
 
@@ -101,9 +120,10 @@ namespace QuantConnect.Algorithm.CSharp
                     std.Update(bar);
                     consolidator.Update(bar);
                     shortTermMA.Update(bar.EndTime, bar.Close);
+                    consolidatorDaily.Update(bar);
                 }
 
-                var signal = new SVMBaselineSignal(consolidator, stoch, stochMA, rollingStochMA, stochEmaLSMA, ema, emaMA, rollingEmaSlope, shortTermMA, Portfolio[symbol], this);
+                var signal = new SVMBaselineSignal(consolidator, stoch, stochMA, rollingStochMA, stochEmaLSMA, rollingStochEmaSlope, ema, emaMA, rollingEmaSlope, shortTermMA, dailyEmaLSMA, Portfolio[symbol], Securities[symbol], this);
 
                 Securities[symbol].VolatilityModel = new AverageTrueRangeVolatilityModel(std);
                 _tradingAssets.Add(symbol,
@@ -169,6 +189,7 @@ namespace QuantConnect.Algorithm.CSharp
 
             Chart trend = new Chart("Trend");
             trend.AddSeries(new Series("LSMA", SeriesType.Line, 0));
+            trend.AddSeries(new Series("EMA", SeriesType.Line, 1));
             AddChart(trend);
 
             Chart prediction = new Chart("Prediction");

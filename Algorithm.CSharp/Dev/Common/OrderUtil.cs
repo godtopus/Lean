@@ -1,14 +1,15 @@
 ﻿using QuantConnect.Orders;
+using QuantConnect.Securities;
 using System;
 
 namespace QuantConnect.Algorithm.CSharp
 {
     class OrderUtil
     {
-        public static decimal RoundOrderPrices(decimal stopPrice)
+        public static decimal RoundOrderPrices(Security security, decimal stopPrice)
         {
             // An increment is a tenth of a pip (pipette).
-            var increment = 0.00001m;
+            var increment = security.SymbolProperties.MinimumPriceVariation;
             var stopRound = Math.Round(stopPrice / increment) * increment;
 
             return stopRound;
