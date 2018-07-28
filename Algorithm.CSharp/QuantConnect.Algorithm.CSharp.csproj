@@ -154,6 +154,7 @@
     <Compile Include="Dev\Common\TradeProfile.cs" />
     <Compile Include="Dev\Common\TradingAsset.cs" />
     <Compile Include="Dev\Extensions\QuantConnectExtensions.cs" />
+    <Compile Include="Dev\Indicators\MesaSineWave.cs" />
     <Compile Include="Dev\Indicators\InternalBarStrength.cs" />
     <Compile Include="Dev\Indicators\Alligator.cs" />
     <Compile Include="Dev\Indicators\FractalChannel.cs" />
@@ -284,11 +285,13 @@
     <Compile Include="Dev\Signals\HMASignal.cs" />
     <Compile Include="Dev\Signals\LogReturnSignal.cs" />
     <Compile Include="Dev\Signals\RSISignal.cs" />
+    <Compile Include="Dev\Signals\SVMBaselineSignalWIP.cs" />
     <Compile Include="Dev\Signals\SVMSignal.cs" />
     <Compile Include="Dev\Signals\SVMBaselineSignal.cs" />
     <Compile Include="Dev\Signals\WilliamsFractalsSignal.cs" />
     <Compile Include="Dev\Statistics\MultiDimensionalScaling.cs" />
     <Compile Include="Dev\Strategies\ForexCarryTradeStrategy\ForexCarryTradeStrategy.cs" />
+    <Compile Include="Dev\Strategies\SVMStrategy\SVMBaselineStrategyWIP.cs" />
     <Compile Include="Dev\Strategies\SVMStrategy\SVMBaselineStrategy.cs" />
     <Compile Include="Dev\Strategies\SVMStrategy\SVMStrategy.cs" />
     <Compile Include="Dev\VolatilityModels\AverageTrueRangeVolatilityModel.cs" />
