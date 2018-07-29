@@ -31,6 +31,9 @@ namespace QuantConnect.Algorithm.CSharp
         private SVMBaselineStrategy _qcAlgorithm;
 
         private SignalType _pendingSignal;
+        private bool _waitingForScan;
+
+        private QuoteBar _previousBar;
 
         readonly bool _debug = false;
 
@@ -76,14 +79,16 @@ namespace QuantConnect.Algorithm.CSharp
                                     ? Trend.Direction.Down
                                     : Trend.Direction.Flat;
 
-                var emaCondition = args.Close - _rollingEMA[0] > (2m / _minimumPriceVariation) && args.Close - _rollingEMA[0] < (10m / _minimumPriceVariation) && _rollingEmaSlope[0] > 0
+                var emaCondition = ((args.Close - _rollingEMA[0] > (2m / _minimumPriceVariation) && args.Close - _rollingEMA[0] < (10m / _minimumPriceVariation))
+                                        || _rollingEMA[0] - args.Close > (25m / _minimumPriceVariation)) && _rollingEmaSlope[0] > _rollingEmaSlope[1]
                                     ? Trend.Direction.Up
-                                    : _rollingEMA[0] - args.Close > (2m / _minimumPriceVariation) && _rollingEMA[0] - args.Close < (10m / _minimumPriceVariation) && _rollingEmaSlope[0] < 0
+                                    : ((_rollingEMA[0] - args.Close > (2m / _minimumPriceVariation) && _rollingEMA[0] - args.Close < (10m / _minimumPriceVariation))
+                                        || args.Close - _rollingEMA[0] > (25m / _minimumPriceVariation)) && _rollingEmaSlope[0] < _rollingEmaSlope[1]
                                     ? Trend.Direction.Down
                                     : Trend.Direction.Flat;
-                var schaffTrendCycleCondition = _rollingSchaffTrendCycle[0] > 5 && _rollingSchaffTrendCycle[0] < 50 && _rollingSchaffTrendCycle[0] > _rollingSchaffTrendCycle[1]
+                var schaffTrendCycleCondition = _rollingSchaffTrendCycle[0] > 25 && _rollingSchaffTrendCycle[0] < 55 && _rollingSchaffTrendCycle[1] < 5 && _rollingSchaffTrendCycle[0] > _rollingSchaffTrendCycle[1]
                                     ? Trend.Direction.Up
-                                    : _rollingSchaffTrendCycle[0] < 95 && _rollingSchaffTrendCycle[0] > 50 && _rollingSchaffTrendCycle[0] < _rollingSchaffTrendCycle[1]
+                                    : _rollingSchaffTrendCycle[0] < 75 && _rollingSchaffTrendCycle[0] > 45 && _rollingSchaffTrendCycle[1] > 95 && _rollingSchaffTrendCycle[0] < _rollingSchaffTrendCycle[1]
                                     ? Trend.Direction.Down
                                     : Trend.Direction.Flat;
 
@@ -93,11 +98,21 @@ namespace QuantConnect.Algorithm.CSharp
                                     ? Trend.Direction.Down
                                     : Trend.Direction.Flat;
 
-                var longCondition = shortTermTrend == Trend.Direction.Up;
-                var shortCondition = shortTermTrend == Trend.Direction.Down;
+                var longCondition = shortTermTrend == Trend.Direction.Up
+                                    && (_previousBar == null || Math.Abs(args.Close - _previousBar.Close) * _minimumPriceVariation < 10m);
+                var shortCondition = shortTermTrend == Trend.Direction.Down
+                                    && (_previousBar == null || Math.Abs(args.Close - _previousBar.Close) * _minimumPriceVariation < 10m);
 
-                var longExit = Signal == SignalType.Long && (_rollingEMA[0] - args.Close > (10m / _minimumPriceVariation) || (_rollingSchaffTrendCycle[0] < 90 && _rollingSchaffTrendCycle[1] > 90));
-                var shortExit = Signal == SignalType.Short && (args.Close - _rollingEMA[0] > (10m / _minimumPriceVariation) || (_rollingSchaffTrendCycle[0] > 10 && _rollingSchaffTrendCycle[1] < 10));
+                var longExit = Signal == SignalType.Long &&
+                                ((_rollingSchaffTrendCycle[0] < 90 && _rollingSchaffTrendCycle[1] > 90)
+                                    || _rollingSchaffTrendCycle[0] > 99.99m
+                                    || schaffTrendCycleCondition == Trend.Direction.Down
+                                    || _rollingEmaSlope[0] < _rollingEmaSlope[1] && _rollingSchaffTrendCycle[0] < 10);
+                var shortExit = Signal == SignalType.Short &&
+                                ((_rollingSchaffTrendCycle[0] > 10 && _rollingSchaffTrendCycle[1] < 10)
+                                    || _rollingSchaffTrendCycle[0] < 0.01m
+                                    || schaffTrendCycleCondition == Trend.Direction.Up
+                                    || (_rollingEmaSlope[0] > _rollingEmaSlope[1] && _rollingSchaffTrendCycle[0] > 90));
 
                 if (!_securityHolding.Invested && longCondition)
                 {
@@ -111,24 +126,27 @@ namespace QuantConnect.Algorithm.CSharp
                 {
                     Signal = (Signal == SignalType.Long && shortCondition) || (Signal == SignalType.Short && longCondition) ? SignalType.Reverse : SignalType.Exit;
                     _pendingSignal = Signal == SignalType.Reverse && shortCondition ? SignalType.Short : Signal == SignalType.Reverse && longCondition ? SignalType.Long : SignalType.NoSignal;
+                    _waitingForScan = true;
                 }
-                else if (!_securityHolding.Invested && (Signal == SignalType.PendingLong || Signal == SignalType.PendingShort))
+                else if (!_securityHolding.Invested)
                 {
                     Signal = SignalType.NoSignal;
                 }
-                else
-                {
-                    //Signal = SignalType.NoSignal;
-                }
+
+                _previousBar = args;
+
+                _qcAlgorithm.PlotSignal(args, _rollingEMA[0], _rollingEmaSlope[0], _rollingSchaffTrendCycle[0], _rollingStoch[0], (int)shortTermTrend, (int) Signal);
             };
         }
 
         public void Scan(QuoteBar data)
         {
-            if (Signal == SignalType.Reverse)
+            if (Signal == SignalType.Reverse && !_waitingForScan)
             {
                 Signal = _pendingSignal;
             }
+
+            _waitingForScan = false;
         }
 
         public SignalType Signal { get; private set; }

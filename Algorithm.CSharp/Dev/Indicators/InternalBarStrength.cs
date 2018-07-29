@@ -2,7 +2,7 @@
 
 namespace QuantConnect.Indicators
 {
-    public class InternalBarStrength : TradeBarIndicator
+    public class InternalBarStrength : BarIndicator
     {
         public override bool IsReady => true;
 
@@ -14,7 +14,7 @@ namespace QuantConnect.Indicators
         {
         }
 
-        protected override decimal ComputeNextValue(TradeBar input)
+        protected override decimal ComputeNextValue(IBaseDataBar input)
         {
             return (input.Close - input.Low) / (input.High - input.Low);
         }

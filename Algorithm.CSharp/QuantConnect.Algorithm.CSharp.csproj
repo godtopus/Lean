@@ -155,6 +155,8 @@
     <Compile Include="Dev\Common\TradingAsset.cs" />
     <Compile Include="Dev\Common\Trend.cs" />
     <Compile Include="Dev\Extensions\QuantConnectExtensions.cs" />
+    <Compile Include="Dev\Indicators\RandomWalkIndex.cs" />
+    <Compile Include="Dev\Indicators\ZeroLagExponentialMovingAverage.cs" />
     <Compile Include="Dev\Indicators\EmpiricalModeDecomposition.cs" />
     <Compile Include="Dev\Indicators\MesaSineWave.cs" />
     <Compile Include="Dev\Indicators\InternalBarStrength.cs" />
