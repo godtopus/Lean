@@ -29,11 +29,13 @@ namespace QuantConnect.Algorithm.CSharp
 
                 if (quantity > _maximumTradeQuantity)
                 {
-                    return _maximumTradeQuantity;
+                    //return _maximumTradeQuantity;
+                    return 200;
                 }
 
                 //return (int) quantity;
-                return _maximumTradeQuantity;
+                //return _maximumTradeQuantity;
+                return 200;
             }
         }
 

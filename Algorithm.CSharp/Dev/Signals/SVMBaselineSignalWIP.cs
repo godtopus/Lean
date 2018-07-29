@@ -15,7 +15,7 @@ namespace QuantConnect.Algorithm.CSharp
         private Stochastic _stoch;
         private ExponentialMovingAverage _stochMA;
         private LeastSquaresMovingAverage _stochEmaLSMA;
-        private DoubleExponentialMovingAverage _ema;
+        private ExponentialMovingAverage _ema;
         private LeastSquaresMovingAverage _emaMA;
 
         private LeastSquaresMovingAverage _dailyEmaLSMA;
@@ -45,7 +45,7 @@ namespace QuantConnect.Algorithm.CSharp
             RollingWindow<IndicatorDataPoint> rollingStochMA,
             LeastSquaresMovingAverage stochEmaLSMA,
             RollingWindow<IndicatorDataPoint> rollingStochEmaSlope,
-            DoubleExponentialMovingAverage ema,
+            ExponentialMovingAverage ema,
             LeastSquaresMovingAverage emaMA,
             RollingWindow<IndicatorDataPoint> rollingEmaSlope,
             ExponentialMovingAverage shortTermMA,
@@ -82,27 +82,27 @@ namespace QuantConnect.Algorithm.CSharp
                     var aboveEma = currentQuote.Close - _ema.Current.Value > 4m / _minimumPriceVariation;
                     var belowEma = _ema.Current.Value - currentQuote.Close > 4m / _minimumPriceVariation;
 
-                    var aboveEmaExit = (currentQuote.Close - _ema.Current.Value > 14m / _minimumPriceVariation) || _rollingDailyEmaSlope[0] > 0.0005m;
-                    var belowEmaExit = (_ema.Current.Value - currentQuote.Close > 14m / _minimumPriceVariation) || _rollingDailyEmaSlope[0] < -0.0005m;
+                    var aboveEmaExit = (currentQuote.Close - _ema.Current.Value > 10m / _minimumPriceVariation) || _rollingDailyEmaSlope[0] > 0.0005m;
+                    var belowEmaExit = (_ema.Current.Value - currentQuote.Close > 10m / _minimumPriceVariation) || _rollingDailyEmaSlope[0] < -0.0005m;
 
-                    var longCondition = //_rollingStochMA[0] > _rollingStochMA[1] &&
+                    var longCondition = _rollingStochMA[0] > _rollingStochMA[1] &&
+                                        _stochMA > 55 &&
                                         aboveEma &&
-                                        _rollingDailyEmaSlope[0] > _rollingDailyEmaSlope[1] &&
-                                        //_dailyEmaLSMA.Slope < 0 &&
+                                        //_rollingDailyEmaSlope[0] > _rollingDailyEmaSlope[1] &&
+                                        _dailyEmaLSMA.Slope > 0 &&
                                         //_rollingStochEmaSlope[0] < 2 &&
                                         //_rollingStochEmaSlope[0] > _rollingStochEmaSlope[1] &&
                                         //_rollingStochMA[0] > 45 &&
-                                        _rollingEmaSlope[0] > 0 &&//0.00001m &&
-                                        _rollingEmaSlope[0] > _rollingEmaSlope[1];
-                    var shortCondition = //_rollingStochMA[0] < _rollingStochMA[1] &&
+                                        _rollingEmaSlope[0] > 0.00001m;
+                    var shortCondition = _rollingStochMA[0] < _rollingStochMA[1] &&
+                                        _stochMA < 45 &&
                                         belowEma &&
-                                        _rollingDailyEmaSlope[0] < _rollingDailyEmaSlope[1] &&
-                                        //_dailyEmaLSMA.Slope > 0 &&
+                                        //_rollingDailyEmaSlope[0] < _rollingDailyEmaSlope[1] &&
+                                        _dailyEmaLSMA.Slope < 0 &&
                                         //_rollingStochEmaSlope[0] > -2 &&
                                         //_rollingStochEmaSlope[0] < _rollingStochEmaSlope[1] &&
                                         //_rollingStochMA[0] < 55 &&
-                                        _rollingEmaSlope[0] < 0 &&//-0.00001m &&
-                                        _rollingEmaSlope[0] < _rollingEmaSlope[1];
+                                        _rollingEmaSlope[0] < -0.00001m;
 
                     var prediction = longCondition ? 1 : shortCondition ? -1 : 0;
 
@@ -116,14 +116,14 @@ namespace QuantConnect.Algorithm.CSharp
 
                     _qcAlgorithm.PlotSignal((QuoteBar) _consolidator.Consolidated, prediction, logLikelihood);
 
-                    var longExit = Signal == SignalType.Long && belowEmaExit;
-                    var shortExit = Signal == SignalType.Short && aboveEmaExit;
+                    var longExit = Signal == SignalType.Long && belowEmaExit && _rollingEmaSlope[0] < 0;
+                    var shortExit = Signal == SignalType.Short && aboveEmaExit && _rollingEmaSlope[0] > 0;
                     /*var longExit = Signal == SignalType.Long && _stochEmaLSMA.Slope < -0.5;
                     var shortExit = Signal == SignalType.Short && _stochEmaLSMA.Slope > 0.5;*/
 
                     if (!_securityHolding.Invested && prediction == 1)
                     {
-                        if (!_shortOnly.Contains(_securityHolding.Symbol))
+                        if (true)//if (!_shortOnly.Contains(_securityHolding.Symbol))
                         {
                             Signal = Signal != SignalType.PendingLong ? SignalType.Long : SignalType.Long;
                         }
@@ -143,7 +143,7 @@ namespace QuantConnect.Algorithm.CSharp
                     }
                     else if (!_securityHolding.Invested && prediction == -1)
                     {
-                        if (_shortable.Contains(_securityHolding.Symbol))
+                        if (true) //if (_shortable.Contains(_securityHolding.Symbol))
                         {
                             Signal = Signal != SignalType.PendingShort ? SignalType.Short : SignalType.Short;
                         }

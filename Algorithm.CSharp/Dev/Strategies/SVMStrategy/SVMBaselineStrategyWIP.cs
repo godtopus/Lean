@@ -19,7 +19,7 @@ namespace QuantConnect.Algorithm.CSharp
     {
         // Shortable: EURGBP, USDCAD
 
-        public string[] Forex = { "EURUSD"/*, "AUDUSD", "GBPUSD", "EURGBP", "USDCAD", "NZDUSD", "USDCHF"*/ /*"EURCHF", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
+        public string[] Forex = { "EURUSD", "AUDUSD", "GBPUSD", "EURGBP", "USDCAD", "NZDUSD", "USDCHF" /*"EURCHF", "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF", "EURAUD"*/ };
 
         public IEnumerable<string> Symbols => Forex;
 
@@ -32,7 +32,7 @@ namespace QuantConnect.Algorithm.CSharp
 
         /******** INDICATORS ********/
         private Dictionary<string, Stochastic> _stoch = new Dictionary<string, Stochastic>();
-        private Dictionary<string, DoubleExponentialMovingAverage> _ema = new Dictionary<string, DoubleExponentialMovingAverage>();
+        private Dictionary<string, ExponentialMovingAverage> _ema = new Dictionary<string, ExponentialMovingAverage>();
 
         // TODO: check volatilitymodel https://github.com/QuantConnect/Lean/blob/master/Common/Securities/RelativeStandardDeviationVolatilityModel.cs
         public override void Initialize()
@@ -54,8 +54,8 @@ namespace QuantConnect.Algorithm.CSharp
                 var consolidator = new QuoteBarConsolidator(TimeSpan.FromMinutes(20));
                 var stoch = new Stochastic(symbol, 10, 3, 3);
                 var stochMA = new ExponentialMovingAverage(symbol, 25).Of(stoch);
-                var stochEmaLSMA = new LeastSquaresMovingAverage(symbol, 15).Of(stochMA);
-                var ema = new DoubleExponentialMovingAverage(symbol, 60);
+                var stochEmaLSMA = new LeastSquaresMovingAverage(symbol, 5).Of(stochMA);
+                var ema = new ExponentialMovingAverage(symbol, 40);
                 var emaMA = new LeastSquaresMovingAverage(symbol, 5).Of(ema);
 
                 var rollingStochMA = HistoryTracker.Track(stochMA);
@@ -72,7 +72,7 @@ namespace QuantConnect.Algorithm.CSharp
                 _ema[symbol] = ema;
 
                 var consolidatorDaily = new QuoteBarConsolidator(TimeSpan.FromHours(1));
-                var dailyMA = new HullMovingAverage(symbol, 14);
+                var dailyMA = new HullMovingAverage(symbol, 7);
                 var dailyEmaLSMA = new LeastSquaresMovingAverage(symbol, 3).Of(dailyMA);
 
                 var rollingDailyEmaSlope = HistoryTracker.Track(dailyEmaLSMA.Slope);

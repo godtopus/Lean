@@ -17,9 +17,7 @@ namespace QuantConnect.Algorithm.CSharp
 {
     public class SVMBaselineStrategy : QCAlgorithm, IRequiredOrderMethods
     {
-        // Shortable: EURGBP, USDCAD
-
-        public string[] Forex = { "EURUSD" };
+        public string[] Forex = { "EURUSD"/*, "AUDUSD", "GBPUSD", "EURGBP", "USDCAD", "NZDUSD", "USDCHF"*/ };
 
         public IEnumerable<string> Symbols => Forex;
 
@@ -46,17 +44,18 @@ namespace QuantConnect.Algorithm.CSharp
                 //Securities[symbol].SlippageModel = new ConstantSlippageModel(0m);
                 SetBrokerageModel(BrokerageName.OandaBrokerage);
 
-                SetBenchmark(symbol);
-
                 /******** DAILY TREND ********/
                 var consolidatorDaily = new QuoteBarConsolidator(TimeSpan.FromDays(1));
                 var dailyHMA = new HullMovingAverage(symbol, 5);
                 var dailyHmaLSMA = new LeastSquaresMovingAverage(symbol, 4).Of(dailyHMA);
-
                 var dailyFAMA = new FractalAdaptiveMovingAverage(symbol, 2, 2);
                 var dailyFamaLSMA = new LeastSquaresMovingAverage(symbol, 3).Of(dailyFAMA);
-
                 var mesa = new MesaSineWave(symbol);
+
+                var rollingDailyHMA = HistoryTracker.Track(dailyHMA);
+                var rollingDailyHMASlope = HistoryTracker.Track(dailyHmaLSMA.Slope);
+                var rollingDailyFAMA = HistoryTracker.Track(dailyFAMA);
+                var rollingDailyFAMASlope = HistoryTracker.Track(dailyFamaLSMA.Slope);
 
                 RegisterIndicator(symbol, dailyHMA, consolidatorDaily);
                 RegisterIndicator(symbol, dailyFAMA, consolidatorDaily);
@@ -65,58 +64,42 @@ namespace QuantConnect.Algorithm.CSharp
 
                 dailyHmaLSMA.Updated += (sender, args) =>
                 {
+                    var currentQuote = (QuoteBar)consolidatorDaily.Consolidated;
+                    var longTermTrend = currentQuote.Close > dailyHMA && dailyHmaLSMA > 0.001
+                                        ? Trend.Direction.Up
+                                        : currentQuote.Close < dailyHMA && dailyHmaLSMA < -0.001
+                                        ? Trend.Direction.Down
+                                        : Trend.Direction.Flat;
+
                     if (Securities[symbol].Price > 0)
                     {
                         Plot("MA", "HMA", dailyHMA);
                         Plot("MA", "FAMA", dailyFAMA);
+                        Plot("Daily Price", "Direction", (int) longTermTrend);
                         Plot("LSMA", "Slope", dailyHmaLSMA.Slope);
-                    }
-                };
-
-                mesa.Updated += (sender, args) =>
-                {
-                    if (Securities[symbol].Price > 0)
-                    {
-                        Plot("Mesa", "Sine", mesa.Sine);
-                        Plot("Mesa", "Lead", mesa.Lead);
-                        Plot("Mesa", "Direction", mesa.LeadDirection);
                     }
                 };
 
                 /******** SHORT TERM TRADING ********/
                 var consolidator = new QuoteBarConsolidator(TimeSpan.FromMinutes(15));
-                var stoch = new Stochastic(symbol, 10, 3, 3);
-                var stochMA = new ExponentialMovingAverage(symbol, 10).Of(stoch);
-                var stochEmaLSMA = new LeastSquaresMovingAverage(symbol, 3).Of(stochMA);
-                var ema = new ExponentialMovingAverage(symbol, 10);
-                var emaMA = new LeastSquaresMovingAverage(symbol, 3).Of(ema);
+                var schaffTrendCycle = new SchaffTrendCycle(symbol);
+                var stoch = new Stochastic(symbol, 21, 9, 9);
+                var ema = new ExponentialMovingAverage(symbol, 100);
+                var emaMA = new LeastSquaresMovingAverage(symbol, 5).Of(ema);
 
-                var rollingStochMA = HistoryTracker.Track(stochMA);
+                var rollingSchaffTrendCycle = HistoryTracker.Track(schaffTrendCycle);
+                var rollingStoch = HistoryTracker.Track(stoch);
+                var rollingEMA = HistoryTracker.Track(ema);
                 var rollingEmaSlope = HistoryTracker.Track(emaMA.Slope);
-                var rollingStochEmaSlope = HistoryTracker.Track(stochEmaLSMA.Slope);
 
+                RegisterIndicator(symbol, schaffTrendCycle, consolidator);
                 RegisterIndicator(symbol, stoch, consolidator);
                 RegisterIndicator(symbol, ema, consolidator);
                 SubscriptionManager.AddConsolidator(symbol, consolidator);
 
-                stochMA.Updated += (sender, args) =>
-                {
-                    if (Securities[symbol].Price > 0)
-                    {
-                        Plot("Indicator", "STO", rollingStochMA[0]);
-                    }
-                };
-
-                ema.Updated += (sender, args) =>
-                {
-                    if (Securities[symbol].Price > 0)
-                    {
-                        PlotSignal((QuoteBar)consolidator.Consolidated, ema, 0, 0d);
-                    }
-                };
-
                 var std = ATR(symbol, 100, MovingAverageType.DoubleExponential, _dataResolution);
 
+                /******** HISTORY ********/
                 var history = History<QuoteBar>(symbol, TimeSpan.FromDays(40), _dataResolution);
 
                 foreach (var bar in history)
@@ -126,7 +109,11 @@ namespace QuantConnect.Algorithm.CSharp
                     consolidator.Update(bar);
                 }
 
-                var signal = new SVMBaselineSignal();
+                var signal = new SVMBaselineSignal(
+                    consolidatorDaily, rollingDailyHMA, rollingDailyHMASlope, rollingDailyFAMA, rollingDailyFAMASlope,
+                    consolidator, rollingSchaffTrendCycle, rollingStoch, rollingEMA, rollingEmaSlope,
+                    Portfolio[symbol], Securities[symbol], this
+                );
 
                 Securities[symbol].VolatilityModel = new AverageTrueRangeVolatilityModel(std);
                 _tradingAssets.Add(symbol,
@@ -139,8 +126,10 @@ namespace QuantConnect.Algorithm.CSharp
                     ));
             }
 
+            /******** CHARTING ********/
             Chart price = new Chart("Daily Price");
             price.AddSeries(new Series("Price", SeriesType.Candle, 0));
+            price.AddSeries(new Series("Direction", SeriesType.Bar, 1));
             AddChart(price);
 
             Chart ma = new Chart("MA");
@@ -152,18 +141,10 @@ namespace QuantConnect.Algorithm.CSharp
             lsma.AddSeries(new Series("Slope", SeriesType.Line, 0));
             AddChart(lsma);
 
-            Chart mesaSineWave = new Chart("Mesa");
-            mesaSineWave.AddSeries(new Series("Sine", SeriesType.Line, 0));
-            mesaSineWave.AddSeries(new Series("Lead", SeriesType.Line, 0));
-            mesaSineWave.AddSeries(new Series("Direction", SeriesType.Bar, 1));
-            AddChart(mesaSineWave);
-
             Chart plotter = new Chart("Plotter");
             plotter.AddSeries(new Series("Close", SeriesType.Line, 0));
             plotter.AddSeries(new Series("EMA", SeriesType.Line, 0));
             plotter.AddSeries(new Series("Diff", SeriesType.Bar, 1));
-            plotter.AddSeries(new Series("Prediction", SeriesType.Bar, 2));
-            plotter.AddSeries(new Series("Probability", SeriesType.Bar, 3));
             AddChart(plotter);
 
             Chart indicator = new Chart("Indicator");
@@ -186,7 +167,7 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 foreach (var symbol in Symbols.Where(s => data.ContainsKey(s)))
                 {
-                    Plot("Daily Price", "Price", data[symbol].Price);
+                    Plot("Daily Price", "Price", data[symbol].Close);
                     //Plot("Plotter", "Close", data[symbol].Close);
                     _tradingAssets[symbol].Scan(data[symbol], ((AverageTrueRangeVolatilityModel)Securities[symbol].VolatilityModel).IsWarmingUp);
                 }
@@ -225,7 +206,7 @@ namespace QuantConnect.Algorithm.CSharp
         {
             var ticket = Transactions.GetOrderTickets(x => x.OrderId == orderEvent.OrderId).Single();
 
-            if (orderEvent.Status == OrderStatus.Filled)
+            /*if (orderEvent.Status == OrderStatus.Filled)
             {
                 foreach (var symbol in Symbols.Where(s => ticket.Symbol.Value == s))
                 {
@@ -245,7 +226,7 @@ namespace QuantConnect.Algorithm.CSharp
                         Plot("Plotter", "Stopped", ticket.AverageFillPrice);
                     }
                 }
-            }
+            }*/
         }
 
         public override void OnEndOfDay()

@@ -1,5 +1,6 @@
 ﻿using QuantConnect.Data;
 using QuantConnect.Data.Consolidators;
+using QuantConnect.Data.Market;
 using QuantConnect.Indicators;
 using System;
 
@@ -8,7 +9,7 @@ namespace QuantConnect.Algorithm.CSharp
     public static class HistoryTracker
     {
         public static RollingWindow<IndicatorDataPoint> Track<T>(IndicatorBase<T> indicator, int historyLength = 8)
-            where T : BaseData
+            where T : IBaseData
         {
             var window = new RollingWindow<IndicatorDataPoint>(historyLength);
             indicator.Updated += (sender, args) => window.Add(indicator.Current);

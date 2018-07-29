@@ -130,7 +130,8 @@ namespace QuantConnect.Algorithm.CSharp
                         var orderEventTime = orderEvent.UtcTime.Subtract(TimeSpan.FromHours(6));
                         var span = endTime.Subtract(orderEventTime);
                         var timeComparison = span.CompareTo(TimeSpan.FromMinutes(180));
-                        timedExit = timeComparison > 0 && OrderUtil.IsUnprofitable(data.Close, orderEvent);
+                        // TODO: Timed Exit
+                        //timedExit = timeComparison > 0 && OrderUtil.IsUnprofitable(data.Close, orderEvent);
                     }
                 }
                 catch (Exception ex)
@@ -139,7 +140,7 @@ namespace QuantConnect.Algorithm.CSharp
                 }
 
                 if ((tradeProfile.ExitSignal.Signal == SignalType.Exit
-                    || EnterSignal.Signal == SignalType.Exit || timedExit)
+                    || EnterSignal.Signal == SignalType.Exit || EnterSignal.Signal == SignalType.Reverse || timedExit)
                     /*|| (tradeProfile.OpenTicket.QuantityFilled > 0 && data.Price <= tradeProfile.StopTicket.Get(OrderField.StopPrice)
 	            		|| tradeProfile.OpenTicket.QuantityFilled < 0 && data.Price >= tradeProfile.StopTicket.Get(OrderField.StopPrice)))*/
                     && tradeProfile.StopTicket.Status != OrderStatus.Filled

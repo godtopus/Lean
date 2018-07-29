@@ -26,9 +26,8 @@ namespace QuantConnect.Algorithm.CSharp
         Short = -1,
         Exit = 2,
         NoSignal = 0,
-        LongToShort = 3,
-        ShortToLong = 4,
-        PendingLong = 5,
-        PendingShort = 6
+        PendingLong = 3,
+        PendingShort = 4,
+        Reverse = 5
     }
 }

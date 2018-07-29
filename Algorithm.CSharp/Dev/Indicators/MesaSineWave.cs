@@ -13,13 +13,13 @@ namespace QuantConnect.Indicators
 
         public override bool IsReady => _prices.IsReady;
 
-        public decimal Sine { get; private set; }
-
-        public decimal Lead { get; private set; }
-
+        public decimal Sine => _sine;
+        public decimal Lead => _lead;
         public int LeadDirection => (int)_direction;
 
         private RollingWindow<IndicatorDataPoint> _prices;
+        private Identity _sine;
+        private Identity _lead;
         private int _period;
         private Direction _direction = Direction.Flat;
 
@@ -32,6 +32,8 @@ namespace QuantConnect.Indicators
             _period = period;
 
             _prices = new RollingWindow<IndicatorDataPoint>(period);
+            _sine = new Identity(name + "_Sine");
+            _lead = new Identity(name + "_Lead");
         }
 
         protected override decimal ComputeNextValue(IndicatorDataPoint input)
@@ -57,10 +59,10 @@ namespace QuantConnect.Indicators
             double phase2 = realPart < 0 ? phase1 + Math.PI : phase1;
             double phase = phase2 < 0 ? phase2 + 2 * Math.PI : phase2 > 2 * Math.PI ? phase2 - 2 * Math.PI : phase2;
 
-            Sine = (decimal)Math.Cos(phase);
-            Lead = (decimal)Math.Cos(phase + Math.PI / 4);
+            _sine.Update(input.EndTime, (decimal)Math.Cos(phase));
+            _lead.Update(input.EndTime, (decimal)Math.Cos(phase + Math.PI / 4));
 
-            _direction = Lead > Sine ? Direction.Up : Lead < Sine ? Direction.Down : _direction;
+            _direction = _lead > _sine ? Direction.Up : _lead < _sine ? Direction.Down : _direction;
 
             return LeadDirection;
         }
