@@ -85,8 +85,7 @@ namespace QuantConnect.Algorithm.CSharp
                 /******** SHORT TERM TRADING ********/
                 var consolidator = new QuoteBarConsolidator(TimeSpan.FromMinutes(15));
                 var schaffTrendCycle = new SchaffTrendCycle(symbol);
-                //var stoch = new Stochastic(symbol, 21, 9, 9);
-                var stoch = new DetrendedPriceOscillator(symbol, 10);
+                var stoch = new Stochastic(symbol, 21, 9, 9);
                 var ema = new ExponentialMovingAverage(symbol, 100);
                 var emaMA = new LeastSquaresMovingAverage(symbol, 2).Of(ema);
 
@@ -96,7 +95,7 @@ namespace QuantConnect.Algorithm.CSharp
                 var rollingEmaSlope = HistoryTracker.Track(emaMA.Slope);
 
                 RegisterIndicator(symbol, schaffTrendCycle, consolidator);
-                RegisterIndicator(symbol, stoch, consolidator, Field.Close);
+                RegisterIndicator(symbol, stoch, consolidator);
                 RegisterIndicator(symbol, ema, consolidator);
                 SubscriptionManager.AddConsolidator(symbol, consolidator);
 
@@ -150,6 +149,15 @@ namespace QuantConnect.Algorithm.CSharp
                     foreach (var s in Symbols)
                     {
                         //_tradingAssets[s].IsTradable = false;
+                    }
+                });
+
+            Schedule.On(DateRules.Every(DayOfWeek.Friday),
+                TimeRules.BeforeMarketClose(Symbols.First(), 240), () =>
+                {
+                    foreach (var s in Symbols)
+                    {
+                        _tradingAssets[s].IsTradable = false;
                     }
                 });
 

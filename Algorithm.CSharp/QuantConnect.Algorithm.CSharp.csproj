@@ -147,6 +147,7 @@
     <Compile Include="Dev\Common\ISignal.cs" />
     <Compile Include="Dev\Common\MathUtil.cs" />
     <Compile Include="Dev\Common\OneShotTrigger.cs" />
+    <Compile Include="Dev\Common\RollingWindowExtensions.cs" />
     <Compile Include="Dev\Common\Storage.cs" />
     <Compile Include="Dev\Common\OrderUtil.cs" />
     <Compile Include="Dev\Common\PerformanceMetrics.cs" />
@@ -156,6 +157,7 @@
     <Compile Include="Dev\Common\TradingAsset.cs" />
     <Compile Include="Dev\Common\Trend.cs" />
     <Compile Include="Dev\Extensions\QuantConnectExtensions.cs" />
+    <Compile Include="Dev\Indicators\AverageDailyRange.cs" />
     <Compile Include="Dev\Indicators\RandomWalkIndex.cs" />
     <Compile Include="Dev\Indicators\ZeroLagExponentialMovingAverage.cs" />
     <Compile Include="Dev\Indicators\EmpiricalModeDecomposition.cs" />

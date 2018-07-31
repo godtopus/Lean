@@ -1,5 +1,6 @@
 ﻿using System;
-using QuantConnect.Data.Consolidators;
+using System.Collections.Generic;
+using System.Security.Permissions;
 using QuantConnect.Data.Market;
 using QuantConnect.Indicators;
 using QuantConnect.Securities;
@@ -8,12 +9,11 @@ namespace QuantConnect.Algorithm.CSharp
 {
     public class BollingerBandSignal : ISignal
     {
-        public BollingerBands _bb;
-        private MovingAverageConvergenceDivergence _macd;
+        private BollingerBands _bb;
+        private AverageDirectionalIndex _adx;
         private SecurityHolding _securityHolding;
 
         private decimal _previousClose;
-        private decimal _lastTradePrice;
         private bool _previousShortSignal;
         private bool _previousLongSignal;
 
@@ -21,82 +21,96 @@ namespace QuantConnect.Algorithm.CSharp
         private LeastSquaresMovingAverage _lsmaMiddleBand;
         private LeastSquaresMovingAverage _lsmaLowerBand;
 
-        private TickConsolidator _ticks;
-
         public BollingerBandSignal(BollingerBands bb,
             LeastSquaresMovingAverage lsmaUpperBand,
             LeastSquaresMovingAverage lsmaMiddleBand,
             LeastSquaresMovingAverage lsmaLowerBand,
-            MovingAverageConvergenceDivergence macd,
-            TickConsolidator ticks,
+            AverageDirectionalIndex adx,
             SecurityHolding securityHolding)
         {
             _bb = bb;
             _lsmaUpperBand = lsmaUpperBand;
             _lsmaMiddleBand = lsmaMiddleBand;
             _lsmaLowerBand = lsmaLowerBand;
-            _macd = macd;
-            _ticks = ticks;
+            _adx = adx;
             _securityHolding = securityHolding;
         }
 
         public void Scan(QuoteBar data)
         {
+            //_bb.Update(data.EndTime, data.Close);
+
             var filter = !_securityHolding.Invested;
 
             bool enterLongSignal, enterShortSignal, exitLongSignal, exitShortSignal;
 
-            enterLongSignal = ((_lsmaUpperBand > _bb.UpperBand
-                        && _lsmaMiddleBand > _bb.MiddleBand
-                        && _lsmaLowerBand > _bb.LowerBand))
-                /*|| (_lsmaUpperBand > _bb.UpperBand
+            if (_adx > 20)
+            {
+                enterLongSignal = _lsmaUpperBand > _bb.UpperBand
                     && _lsmaMiddleBand > _bb.MiddleBand
-                    && _lsmaLowerBand < _bb.LowerBand))*/
-                && (_macd - _macd.Signal) / _macd.Fast > 0m
-                //&& _ticks.WorkingBar.Price > _bb.MiddleBand;
-                && _ticks.WorkingBar.Price > _bb.UpperBand - (_bb.UpperBand - _bb.MiddleBand) / 2m;
+                    && _lsmaLowerBand > _bb.LowerBand;
 
-            enterShortSignal = ((_lsmaUpperBand < _bb.UpperBand
-                        && _lsmaMiddleBand < _bb.MiddleBand
-                        && _lsmaLowerBand < _bb.LowerBand))
-                /*|| (_lsmaUpperBand > _bb.UpperBand
-                    && _lsmaMiddleBand < _bb.MiddleBand
-                    && _lsmaLowerBand < _bb.LowerBand))*/
-                && (_macd - _macd.Signal) / _macd.Fast < 0m
-                //&& _ticks.WorkingBar.Price < _bb.MiddleBand;
-                && _ticks.WorkingBar.Price < _bb.LowerBand + (_bb.MiddleBand - _bb.LowerBand) / 2m;
+                enterShortSignal = _lsmaUpperBand < _bb.UpperBand
+                   && _lsmaMiddleBand < _bb.MiddleBand
+                   && _lsmaLowerBand < _bb.LowerBand;
 
-            exitLongSignal = _ticks.WorkingBar.Price < _bb.LowerBand + (_bb.MiddleBand - _bb.LowerBand) / 2m
-                || Math.Abs(data.Price - _lastTradePrice) > 20m / 20000m;
-            exitShortSignal = _ticks.WorkingBar.Price > _bb.UpperBand - (_bb.UpperBand - _bb.MiddleBand) / 2m
-                || Math.Abs(_lastTradePrice - data.Price) > 20m / 20000m;
+                exitLongSignal = _lsmaUpperBand < _bb.UpperBand
+                    && data.Price < _bb.LowerBand;
+                exitShortSignal = _lsmaLowerBand > _bb.LowerBand
+                    && data.Price > _bb.UpperBand;
+            }
+            else
+            {
+                enterLongSignal = data.Close > _bb.LowerBand
+                    && _previousClose < _bb.LowerBand;
+                enterShortSignal = data.Close < _bb.UpperBand
+                    && _previousClose > _bb.UpperBand;
+                exitLongSignal = data.Close > _bb.UpperBand;
+                exitShortSignal = data.Close < _bb.LowerBand;
+            }
 
             if (enterShortSignal && /*shortSignal != _previousShortSignal &&*/ filter)
             {
                 Signal = SignalType.Short;
-                _lastTradePrice = data.Price;
             }
             else if (enterLongSignal && /*shortSignal != _previousLongSignal &&*/ filter)
             {
                 Signal = SignalType.Long;
-                _lastTradePrice = data.Price;
             }
-            else if (exitLongSignal && _securityHolding.IsLong)
+            else if (enterShortSignal && _securityHolding.IsLong && _securityHolding.UnrealizedProfitPercent > 0.0015m)
             {
                 // exit long due to bb switching
                 Signal = SignalType.Exit;
             }
-            else if (exitShortSignal && _securityHolding.IsShort)
+            else if (enterLongSignal && _securityHolding.IsShort && _securityHolding.UnrealizedProfitPercent > 0.0015m)
             {
                 // exit short due to bb switching
                 Signal = SignalType.Exit;
             }
+            /*if (data.Close < _bb.UpperBand && _previousClose > _bb.UpperBand && filter)
+            {
+                Signal = SignalType.Short;
+            }
+            else if (data.Close > _bb.LowerBand && _previousClose < _bb.LowerBand && filter)
+            {
+            	Signal = SignalType.Long;
+            }
+            else if (data.Close < _bb.UpperBand && _previousClose > _bb.UpperBand && _securityHolding.IsLong)
+            {
+                // exit long due to bb switching
+                Signal = SignalType.Exit;
+            }
+            else if (data.Close > _bb.LowerBand && _previousClose < _bb.LowerBand && _securityHolding.IsShort)
+            {
+            	// exit short due to bb switching
+            	Signal = SignalType.Exit;
+            }*/
             else
             {
                 Signal = SignalType.NoSignal;
             }
 
-            _previousClose = data.Price;
+            _previousClose = data.Close;
             //_previousLongSignal = longSignal;
             //_previousShortSignal = shortSignal;
         }

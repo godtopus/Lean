@@ -117,18 +117,18 @@ namespace QuantConnect.Algorithm.CSharp
                 var stc = _rollingSchaffTrendCycle[0];
                 var previousSTC = _rollingSchaffTrendCycle[1];
 
-                var emaCondition = args.Close - ema > (2m / _minimumPriceVariation) && args.Close - ema < (10m / _minimumPriceVariation) && emaSlope > 0
+                var emaCondition = args.Close - ema > (2m / _minimumPriceVariation) && args.Close - ema < (10m / _minimumPriceVariation) && _rollingEMA.Rising(5)
                                     ? Trend.Direction.Up
-                                    : ema - args.Close > (25m / _minimumPriceVariation)
+                                    : ema - args.Close > (25m / _minimumPriceVariation) && _rollingEMA.Falling()
                                     ? Trend.Direction.MeanRevertingUp
-                                    : ema - args.Close > (2m / _minimumPriceVariation) && ema - args.Close < (10m / _minimumPriceVariation) && emaSlope < 0
+                                    : ema - args.Close > (2m / _minimumPriceVariation) && ema - args.Close < (10m / _minimumPriceVariation) && _rollingEMA.Falling(5)
                                     ? Trend.Direction.Down
-                                    : args.Close - ema > (25m / _minimumPriceVariation)
+                                    : args.Close - ema > (25m / _minimumPriceVariation) && _rollingEMA.Rising()
                                     ? Trend.Direction.MeanRevertingDown
                                     : Trend.Direction.Flat;
-                var schaffTrendCycleCondition = stc > 50 && stc < 75 && previousSTC < 5 && stc > previousSTC
+                var schaffTrendCycleCondition = _rollingSchaffTrendCycle.InRangeExclusive(50m, 75m) && _rollingSchaffTrendCycle.CrossAbove(1m, 1) && _rollingSchaffTrendCycle.Rising()
                                     ? Trend.Direction.Up
-                                    : stc < 50 && stc > 25 && previousSTC > 95 && stc < previousSTC
+                                    : _rollingSchaffTrendCycle.InRangeExclusive(25m, 50m) && _rollingSchaffTrendCycle.CrossBelow(99m, 1) && _rollingSchaffTrendCycle.Falling()
                                     ? Trend.Direction.Down
                                     : Trend.Direction.Flat;
 
@@ -148,13 +148,15 @@ namespace QuantConnect.Algorithm.CSharp
                                     //&& (Math.Abs(args.Close - _previousBar.Close) * _minimumPriceVariation < 10m);
 
                 var longExit = Signal == SignalType.Long &&
-                                ((stc < 90 && previousSTC > 90)
-                                    || _emaEntry == Trend.Direction.MeanRevertingUp && (ema - args.Close) * _minimumPriceVariation < 5m
+                                (/*_rollingSchaffTrendCycle.CrossBelow(90m, 1)
+                                    || */_emaEntry == Trend.Direction.MeanRevertingUp && (ema - args.Close) * _minimumPriceVariation < 5m
+                                    || _emaEntry == Trend.Direction.Up && (args.Close - ema) * _minimumPriceVariation > 35m
                                     //|| _emaEntry == Trend.Direction.Up && (args.Close - _triggerBar.Close) * _minimumPriceVariation < -5m
                                     || schaffTrendCycleCondition == Trend.Direction.Down);
                 var shortExit = Signal == SignalType.Short &&
-                                ((stc > 10 && stc < 10)
-                                    || _emaEntry == Trend.Direction.MeanRevertingDown && (args.Close - ema) * _minimumPriceVariation < 5m
+                                (/*_rollingSchaffTrendCycle.CrossAbove(10m, 1)
+                                    || */_emaEntry == Trend.Direction.MeanRevertingDown && (args.Close - ema) * _minimumPriceVariation < 5m
+                                    || _emaEntry == Trend.Direction.Down && (ema - args.Close) * _minimumPriceVariation > 35m
                                     //|| _emaEntry == Trend.Direction.Down && (args.Close - _triggerBar.Close) * _minimumPriceVariation > 5m
                                     || schaffTrendCycleCondition == Trend.Direction.Up);
 
