@@ -129,7 +129,7 @@ namespace QuantConnect.Algorithm.CSharp
                         var endTime = data.EndTime.ToUniversalTime();
                         var orderEventTime = orderEvent.UtcTime.Subtract(TimeSpan.FromHours(6));
                         var span = endTime.Subtract(orderEventTime);
-                        var timeComparison = span.CompareTo(TimeSpan.FromMinutes(180));
+                        var timeComparison = span.CompareTo(TimeSpan.FromMinutes(270));
                         // TODO: Timed Exit
                         //timedExit = timeComparison > 0 && OrderUtil.IsUnprofitable(data.Close, orderEvent);
                     }

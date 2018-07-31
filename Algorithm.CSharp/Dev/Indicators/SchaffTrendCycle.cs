@@ -35,6 +35,7 @@ namespace QuantConnect.Indicators
 
             var macdBar = new TradeBar
             {
+                Time = input.Time,
                 EndTime = input.EndTime,
                 Open = _macd,
                 High = _macd,
@@ -46,22 +47,23 @@ namespace QuantConnect.Indicators
             if (!_frac1.IsReady) return 0m;
 
             var pf = _pf.IsReady ? _pf + (_factor * (_frac1.FastStoch - _pf)) : _frac1.FastStoch;
-            _pf.Update(input.EndTime, pf);
+            _pf.Update(input.Time, pf);
 
             var pfBar = new TradeBar
             {
+                Time = input.Time,
                 EndTime = input.EndTime,
-                Open = _frac1.FastStoch,
-                High = _frac1.FastStoch,
-                Low = _frac1.FastStoch,
-                Close = _frac1.FastStoch
+                Open = pf,
+                High = pf,
+                Low = pf,
+                Close = pf
             };
             _frac2.Update(pfBar);
 
             if (!_frac2.IsReady) return 0m;
 
             var pff = _pff.IsReady ? _pff + (_factor * (_frac2.FastStoch - _pff)) : _frac2.FastStoch;
-            _pff.Update(input.EndTime, pff);
+            _pff.Update(input.Time, pff);
 
             return pff;
         }

@@ -17,7 +17,8 @@ namespace QuantConnect.Algorithm.CSharp
 
         public static bool IsUnprofitable(decimal currentPrice, OrderEvent orderEvent)
         {
-            return orderEvent.Status == OrderStatus.Filled && (orderEvent.Direction == OrderDirection.Buy ? currentPrice < orderEvent.FillPrice : currentPrice > orderEvent.FillPrice);
+            var limit = 15m / 10000m;
+            return orderEvent.Status == OrderStatus.Filled && (orderEvent.Direction == OrderDirection.Buy ? currentPrice + limit < orderEvent.FillPrice : currentPrice - limit > orderEvent.FillPrice);
         }
     }
 }

@@ -12,6 +12,7 @@ using QuantConnect.Orders;
 using System.Drawing;
 using QuantConnect.Statistics;
 using QuantConnect.Algorithm.CSharp.Dev.Common;
+using QuantConnect.Orders.Slippage;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -31,7 +32,7 @@ namespace QuantConnect.Algorithm.CSharp
         public override void Initialize()
         {
             SetStartDate(2016, 1, 1);
-            SetEndDate(2016, 2, 1);
+            SetEndDate(2017, 1, 1);
             SetCash(3000);
 
             SetBrokerageMessageHandler(new CustomBrokerageMessageHandler(this));
@@ -46,11 +47,12 @@ namespace QuantConnect.Algorithm.CSharp
 
                 /******** DAILY TREND ********/
                 var consolidatorDaily = new QuoteBarConsolidator(TimeSpan.FromDays(1));
-                var dailyHMA = new HullMovingAverage(symbol, 5);
-                var dailyHmaLSMA = new LeastSquaresMovingAverage(symbol, 4).Of(dailyHMA);
+                var dailyHMA = new HullMovingAverage(symbol, 10);
+                var dailyHmaLSMA = new LeastSquaresMovingAverage(symbol, 3).Of(dailyHMA);
                 var dailyFAMA = new FractalAdaptiveMovingAverage(symbol, 2, 2);
                 var dailyFamaLSMA = new LeastSquaresMovingAverage(symbol, 3).Of(dailyFAMA);
                 var mesa = new MesaSineWave(symbol);
+                var dailySchaffTrendCycle = new SchaffTrendCycle(symbol);
 
                 var rollingDailyHMA = HistoryTracker.Track(dailyHMA);
                 var rollingDailyHMASlope = HistoryTracker.Track(dailyHmaLSMA.Slope);
@@ -60,6 +62,7 @@ namespace QuantConnect.Algorithm.CSharp
                 RegisterIndicator(symbol, dailyHMA, consolidatorDaily);
                 RegisterIndicator(symbol, dailyFAMA, consolidatorDaily);
                 RegisterIndicator(symbol, mesa, consolidatorDaily);
+                RegisterIndicator(symbol, dailySchaffTrendCycle, consolidatorDaily);
                 SubscriptionManager.AddConsolidator(symbol, consolidatorDaily);
 
                 dailyHmaLSMA.Updated += (sender, args) =>
@@ -73,10 +76,9 @@ namespace QuantConnect.Algorithm.CSharp
 
                     if (Securities[symbol].Price > 0)
                     {
-                        /*Plot("MA", "HMA", dailyHMA);
-                        Plot("MA", "FAMA", dailyFAMA);
-                        Plot("Daily Price", "Direction", (int) longTermTrend);
-                        Plot("LSMA", "Slope", dailyHmaLSMA.Slope);*/
+                        /*Plot("Daily Price", "MA", dailyHMA);
+                        Plot("Daily Price", "Slope", dailyHmaLSMA.Slope);
+                        Plot("Daily Price", "STC", dailySchaffTrendCycle);*/
                     }
                 };
 
@@ -86,7 +88,7 @@ namespace QuantConnect.Algorithm.CSharp
                 //var stoch = new Stochastic(symbol, 21, 9, 9);
                 var stoch = new DetrendedPriceOscillator(symbol, 10);
                 var ema = new ExponentialMovingAverage(symbol, 100);
-                var emaMA = new LeastSquaresMovingAverage(symbol, 3).Of(ema);
+                var emaMA = new LeastSquaresMovingAverage(symbol, 2).Of(ema);
 
                 var rollingSchaffTrendCycle = HistoryTracker.Track(schaffTrendCycle);
                 var rollingStoch = HistoryTracker.Track(stoch);
@@ -163,7 +165,9 @@ namespace QuantConnect.Algorithm.CSharp
             /******** CHARTING ********/
             /*Chart price = new Chart("Daily Price");
             price.AddSeries(new Series("Price", SeriesType.Candle, 0));
-            price.AddSeries(new Series("Direction", SeriesType.Bar, 1));
+            price.AddSeries(new Series("MA", SeriesType.Line, 0));
+            price.AddSeries(new Series("Slope", SeriesType.Line, 1));
+            price.AddSeries(new Series("STC", SeriesType.Line, 2));
             AddChart(price);
 
             Chart ma = new Chart("MA");
