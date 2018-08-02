@@ -70,7 +70,7 @@ namespace QuantConnect.Algorithm.CSharp
 
             _securityHolding = securityHolding;
             _security = security;
-            _minimumPriceVariation = (1m / _security.SymbolProperties.MinimumPriceVariation) / 10m;
+            _minimumPriceVariation = 10000m;
 
             _qcAlgorithm = qcAlgorithm;
 
@@ -117,18 +117,18 @@ namespace QuantConnect.Algorithm.CSharp
                 var stc = _rollingSchaffTrendCycle[0];
                 var previousSTC = _rollingSchaffTrendCycle[1];
 
-                var emaCondition = args.Close - ema > (2m / _minimumPriceVariation) && args.Close - ema < (10m / _minimumPriceVariation) && _rollingEMA.Rising(5)
+                var emaCondition = args.Close - ema > (2m / _minimumPriceVariation) && args.Close - ema < (10m / _minimumPriceVariation) && _rollingEMA.Rising(3)
                                     ? Trend.Direction.Up
                                     : ema - args.Close > (25m / _minimumPriceVariation) && _rollingEMA.Falling()
                                     ? Trend.Direction.MeanRevertingUp
-                                    : ema - args.Close > (2m / _minimumPriceVariation) && ema - args.Close < (10m / _minimumPriceVariation) && _rollingEMA.Falling(5)
+                                    : ema - args.Close > (2m / _minimumPriceVariation) && ema - args.Close < (10m / _minimumPriceVariation) && _rollingEMA.Falling(3)
                                     ? Trend.Direction.Down
                                     : args.Close - ema > (25m / _minimumPriceVariation) && _rollingEMA.Rising()
                                     ? Trend.Direction.MeanRevertingDown
                                     : Trend.Direction.Flat;
-                var schaffTrendCycleCondition = _rollingSchaffTrendCycle.InRangeExclusive(50m, 75m) && _rollingSchaffTrendCycle.CrossAbove(1m, 1) && _rollingSchaffTrendCycle.Rising()
+                var schaffTrendCycleCondition = _rollingSchaffTrendCycle.InRangeExclusive(50m, 90m) && _rollingSchaffTrendCycle.CrossAbove(1m, 3) && _rollingSchaffTrendCycle.Rising(2)
                                     ? Trend.Direction.Up
-                                    : _rollingSchaffTrendCycle.InRangeExclusive(25m, 50m) && _rollingSchaffTrendCycle.CrossBelow(99m, 1) && _rollingSchaffTrendCycle.Falling()
+                                    : _rollingSchaffTrendCycle.InRangeExclusive(10m, 50m) && _rollingSchaffTrendCycle.CrossBelow(99m, 3) && _rollingSchaffTrendCycle.Falling(2)
                                     ? Trend.Direction.Down
                                     : Trend.Direction.Flat;
 
@@ -150,15 +150,15 @@ namespace QuantConnect.Algorithm.CSharp
                 var longExit = Signal == SignalType.Long &&
                                 (/*_rollingSchaffTrendCycle.CrossBelow(90m, 1)
                                     || */_emaEntry == Trend.Direction.MeanRevertingUp && (ema - args.Close) * _minimumPriceVariation < 5m
-                                    || _emaEntry == Trend.Direction.Up && (args.Close - ema) * _minimumPriceVariation > 35m
+                                    || _emaEntry == Trend.Direction.Up && _rollingEMA.Falling(2));
                                     //|| _emaEntry == Trend.Direction.Up && (args.Close - _triggerBar.Close) * _minimumPriceVariation < -5m
-                                    || schaffTrendCycleCondition == Trend.Direction.Down);
+                                    //|| schaffTrendCycleCondition == Trend.Direction.Down*);
                 var shortExit = Signal == SignalType.Short &&
                                 (/*_rollingSchaffTrendCycle.CrossAbove(10m, 1)
                                     || */_emaEntry == Trend.Direction.MeanRevertingDown && (args.Close - ema) * _minimumPriceVariation < 5m
-                                    || _emaEntry == Trend.Direction.Down && (ema - args.Close) * _minimumPriceVariation > 35m
+                                    || _emaEntry == Trend.Direction.Down && _rollingEMA.Rising(2));
                                     //|| _emaEntry == Trend.Direction.Down && (args.Close - _triggerBar.Close) * _minimumPriceVariation > 5m
-                                    || schaffTrendCycleCondition == Trend.Direction.Up);
+                                    //|| schaffTrendCycleCondition == Trend.Direction.Up);
 
                 if (!_securityHolding.Invested && longCondition)
                 {

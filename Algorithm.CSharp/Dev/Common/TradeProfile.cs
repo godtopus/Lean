@@ -67,7 +67,7 @@ namespace QuantConnect.Algorithm.CSharp
 
         public bool IsSpreadTradable(QuoteBar latestQuote)
         {
-            return Math.Abs(latestQuote.Ask.Close - latestQuote.Bid.Close) * 10000 <= 3;
+            return Math.Abs(latestQuote.Ask.Close - latestQuote.Bid.Close) * 10000m <= 3m;
         }
 
         public void UpdateStopLoss(QuoteBar latestQuote)

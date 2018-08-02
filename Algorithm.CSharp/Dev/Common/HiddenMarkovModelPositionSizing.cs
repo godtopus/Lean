@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Accord.Statistics.Models.Markov.Learning;
 using QuantConnect.Indicators;
 
@@ -34,15 +35,15 @@ namespace QuantConnect.Algorithm.CSharp
         public decimal PredictionRisk()
         {
             var direction = PredictNextTrade();
-            var predictionRisk = 1.2m;
+            var predictionRisk = 1.0m;
 
             if (direction == Tradetype.Losing)
             {
-                predictionRisk = 0.8m;
+                predictionRisk = 0.5m;
             }
-            else if (direction == Tradetype.Neutral)
+            else if (direction == Tradetype.Winning)
             {
-                predictionRisk = 1.0m;
+                predictionRisk = 1.5m;
             }
 
             return predictionRisk;
@@ -57,9 +58,9 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 predictionRisk = 0.5m;
             }
-            else if (direction == Tradetype.Neutral)
+            else if (direction == Tradetype.Winning)
             {
-                predictionRisk = 0.8m;
+                predictionRisk = 1.5m;
             }
 
             return (int)Math.Round(predictionRisk * portfolioCash / currentPrice);
@@ -68,13 +69,30 @@ namespace QuantConnect.Algorithm.CSharp
         private Tradetype PredictNextTrade()
         {
             var res = Tradetype.Winning;
-            if (_tradeReturns.Count == 4)
+            var observationSequence = GetSequence();
+
+            if (observationSequence.All((o) => o == 0))
             {
-                var observationSequence = GetSequence();
+                res = Tradetype.Losing;
+            }
+            else if (observationSequence.All((o) => o == 1))
+            {
+                res = Tradetype.Neutral;
+            }
+            else if (observationSequence.All((o) => o == 2))
+            {
+                res = Tradetype.Winning;
+            }
+            else if (observationSequence.Distinct().Count() < 3)
+            {
+                res = Tradetype.Neutral;
+            }
+            else if (_tradeReturns.Count == 4)
+            {
                 var teacher = new BaumWelchLearning()
                 {
                     NumberOfStates = 3,
-                    NumberOfSymbols = 3
+                    NumberOfSymbols = observationSequence.Max() + 1
                 };
 
                 // and call its Run method to start learning

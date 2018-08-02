@@ -94,6 +94,25 @@ namespace QuantConnect.Algorithm.CSharp
                 var rollingEMA = HistoryTracker.Track(ema);
                 var rollingEmaSlope = HistoryTracker.Track(emaMA.Slope);
 
+                /****** ALMA Fibonacci ******/
+                var alma5 = new ArnaudLegouxMovingAverage(symbol, 5);
+                var alma8 = new ArnaudLegouxMovingAverage(symbol, 8);
+                var alma13 = new ArnaudLegouxMovingAverage(symbol, 13);
+                var alma21 = new ArnaudLegouxMovingAverage(symbol, 21);
+                var alma34 = new ArnaudLegouxMovingAverage(symbol, 34);
+                var alma55 = new ArnaudLegouxMovingAverage(symbol, 55);
+                var alma89 = new ArnaudLegouxMovingAverage(symbol, 89);
+                var alma144 = new ArnaudLegouxMovingAverage(symbol, 144);
+
+                RegisterIndicator(symbol, alma5, consolidator);
+                RegisterIndicator(symbol, alma8, consolidator);
+                RegisterIndicator(symbol, alma13, consolidator);
+                RegisterIndicator(symbol, alma21, consolidator);
+                RegisterIndicator(symbol, alma34, consolidator);
+                RegisterIndicator(symbol, alma55, consolidator);
+                RegisterIndicator(symbol, alma89, consolidator);
+                RegisterIndicator(symbol, alma144, consolidator);
+
                 RegisterIndicator(symbol, schaffTrendCycle, consolidator);
                 RegisterIndicator(symbol, stoch, consolidator);
                 RegisterIndicator(symbol, ema, consolidator);
@@ -110,6 +129,16 @@ namespace QuantConnect.Algorithm.CSharp
                     consolidatorDaily.Update(bar);
                     consolidator.Update(bar);
                 }
+
+                var header = new string[] { "Time", "ALMA_5", "ALMA_8", "ALMA_13", "ALMA_21", "ALMA_34", "ALMA_55", "ALMA_89", "ALMA_144" };
+                Storage.CreateFile($"C:\\Users\\M\\Desktop\\{symbol}_ALMA.csv", header);
+
+                consolidator.DataConsolidated += (sender, args) =>
+                {
+                    var line = new object[] { Storage.ToUTCTimestamp(args.Time), alma5.Current.Value, alma8.Current.Value, alma13.Current.Value,
+                        alma21.Current.Value, alma34.Current.Value, alma55.Current.Value, alma89.Current.Value, alma144.Current.Value };
+                    Storage.AppendToFile($"C:\\Users\\M\\Desktop\\{symbol}_ALMA.csv", line);
+                };
 
                 var signal = new SVMBaselineSignal(
                     consolidatorDaily, rollingDailyHMA, rollingDailyHMASlope, rollingDailyFAMA, rollingDailyFAMASlope,
@@ -157,7 +186,7 @@ namespace QuantConnect.Algorithm.CSharp
                 {
                     foreach (var s in Symbols)
                     {
-                        _tradingAssets[s].IsTradable = false;
+                        //_tradingAssets[s].IsTradable = false;
                     }
                 });
 

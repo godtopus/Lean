@@ -66,12 +66,12 @@ namespace QuantConnect.Algorithm.CSharp.Dev.Common
             return predicate;
         }
 
-        public static bool CrossAbove(this RollingWindow<decimal> window1, decimal boundary, int lookback = 1, decimal tolerance = 0m)
+        public static bool CrossAbove(this RollingWindow<decimal> window, decimal boundary, int lookback = 1, decimal tolerance = 0m)
         {
             var predicate = false;
-            for (var i = 0; i < Math.Min(lookback, window1.Count - 1); i++)
+            for (var i = 0; i < Math.Min(lookback, window.Count - 1); i++)
             {
-                predicate = window1[i] > boundary * (1 + tolerance) && window1[i + 1] < boundary * (1 - tolerance);
+                predicate = window[i] > boundary * (1 + tolerance) && window[i + 1] < boundary * (1 - tolerance);
                 if (predicate)
                 {
                     break;
@@ -81,12 +81,12 @@ namespace QuantConnect.Algorithm.CSharp.Dev.Common
             return predicate;
         }
 
-        public static bool CrossAbove(this RollingWindow<IndicatorDataPoint> window1, decimal boundary, int lookback = 1, decimal tolerance = 0m)
+        public static bool CrossAbove(this RollingWindow<IndicatorDataPoint> window, decimal boundary, int lookback = 1, decimal tolerance = 0m)
         {
             var predicate = false;
-            for (var i = 0; i < Math.Min(lookback, window1.Count - 1); i++)
+            for (var i = 0; i < Math.Min(lookback, window.Count - 1); i++)
             {
-                predicate = window1[i] > boundary * (1 + tolerance) && window1[i + 1] < boundary * (1 - tolerance);
+                predicate = window[i] > boundary * (1 + tolerance) && window[i + 1] < boundary * (1 - tolerance);
                 if (predicate)
                 {
                     break;
@@ -96,12 +96,12 @@ namespace QuantConnect.Algorithm.CSharp.Dev.Common
             return predicate;
         }
 
-        public static bool CrossBelow(this RollingWindow<decimal> window1, decimal boundary, int lookback = 1, decimal tolerance = 0m)
+        public static bool CrossBelow(this RollingWindow<decimal> window, decimal boundary, int lookback = 1, decimal tolerance = 0m)
         {
             var predicate = false;
-            for (var i = 0; i < Math.Min(lookback, window1.Count - 1); i++)
+            for (var i = 0; i < Math.Min(lookback, window.Count - 1); i++)
             {
-                predicate = window1[i] < boundary * (1 - tolerance) && window1[i + 1] > boundary * (1 + tolerance);
+                predicate = window[i] < boundary * (1 - tolerance) && window[i + 1] > boundary * (1 + tolerance);
                 if (predicate)
                 {
                     break;
@@ -111,12 +111,12 @@ namespace QuantConnect.Algorithm.CSharp.Dev.Common
             return predicate;
         }
 
-        public static bool CrossBelow(this RollingWindow<IndicatorDataPoint> window1, decimal boundary, int lookback = 1, decimal tolerance = 0m)
+        public static bool CrossBelow(this RollingWindow<IndicatorDataPoint> window, decimal boundary, int lookback = 1, decimal tolerance = 0m)
         {
             var predicate = false;
-            for (var i = 0; i < Math.Min(lookback, window1.Count - 1); i++)
+            for (var i = 0; i < Math.Min(lookback, window.Count - 1); i++)
             {
-                predicate = window1[i] < boundary * (1 - tolerance) && window1[i + 1] > boundary * (1 + tolerance);
+                predicate = window[i] < boundary * (1 - tolerance) && window[i + 1] > boundary * (1 + tolerance);
                 if (predicate)
                 {
                     break;
