@@ -126,6 +126,60 @@ namespace QuantConnect.Algorithm.CSharp.Dev.Common
             return predicate;
         }
 
+        public static bool DoubleCrossAbove(this RollingWindow<IndicatorDataPoint> window1, RollingWindow<IndicatorDataPoint> window2, RollingWindow<IndicatorDataPoint> window3, int lookback = 1, decimal tolerance = 0m)
+        {
+            var predicate = false;
+            var fastSlowCross = false;
+            var mediumSlowCross = false;
+
+            for (var i = 0; i < Math.Min(lookback, Math.Min(window1.Count - 1, window2.Count - 1)); i++)
+            {
+                if (!mediumSlowCross)
+                {
+                    mediumSlowCross = window2[i] > window3[i] * (1 + tolerance) && window2[i + 1] < window3[i + 1] * (1 - tolerance);
+                }
+                else if (mediumSlowCross)
+                {
+                    fastSlowCross = window1[i] > window3[i] * (1 + tolerance) && window1[i + 1] < window3[i + 1] * (1 - tolerance);
+                }
+
+                predicate = mediumSlowCross && fastSlowCross;
+                if (predicate)
+                {
+                    break;
+                }
+            }
+
+            return predicate;
+        }
+
+        public static bool DoubleCrossBelow(this RollingWindow<IndicatorDataPoint> window1, RollingWindow<IndicatorDataPoint> window2, RollingWindow<IndicatorDataPoint> window3, int lookback = 1, decimal tolerance = 0m)
+        {
+            var predicate = false;
+            var fastSlowCross = false;
+            var mediumSlowCross = false;
+
+            for (var i = 0; i < Math.Min(lookback, Math.Min(window1.Count - 1, window2.Count - 1)); i++)
+            {
+                if (!mediumSlowCross)
+                {
+                    mediumSlowCross = window2[i] < window3[i] * (1 - tolerance) && window2[i + 1] > window3[i + 1] * (1 + tolerance);
+                }
+                else if (mediumSlowCross)
+                {
+                    fastSlowCross = window1[i] < window3[i] * (1 - tolerance) && window1[i + 1] > window3[i + 1] * (1 + tolerance);
+                }
+
+                predicate = mediumSlowCross && fastSlowCross;
+                if (predicate)
+                {
+                    break;
+                }
+            }
+
+            return predicate;
+        }
+
         public static bool Rising(this RollingWindow<decimal> window, int lookback = 1, decimal tolerance = 0m)
         {
             return window.Take(lookback).Zip(window.Skip(1).Take(lookback), (w1, w2) => Tuple.Create(w1, w2)).All((w) => w.Item1 > w.Item2 * (1 + tolerance));

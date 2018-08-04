@@ -12,7 +12,6 @@ using QuantConnect.Orders;
 using System.Drawing;
 using QuantConnect.Statistics;
 using QuantConnect.Algorithm.CSharp.Dev.Common;
-using QuantConnect.Orders.Slippage;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -28,6 +27,8 @@ namespace QuantConnect.Algorithm.CSharp
 
         private Resolution _dataResolution = Resolution.Minute;
         private Dictionary<string, TradingAsset> _tradingAssets = new Dictionary<string, TradingAsset>();
+
+        private bool _store = false;
 
         public override void Initialize()
         {
@@ -45,54 +46,8 @@ namespace QuantConnect.Algorithm.CSharp
                 //Securities[symbol].SlippageModel = new ConstantSlippageModel(0m);
                 SetBrokerageModel(BrokerageName.OandaBrokerage);
 
-                /******** DAILY TREND ********/
-                var consolidatorDaily = new QuoteBarConsolidator(TimeSpan.FromDays(1));
-                var dailyHMA = new HullMovingAverage(symbol, 10);
-                var dailyHmaLSMA = new LeastSquaresMovingAverage(symbol, 3).Of(dailyHMA);
-                var dailyFAMA = new FractalAdaptiveMovingAverage(symbol, 2, 2);
-                var dailyFamaLSMA = new LeastSquaresMovingAverage(symbol, 3).Of(dailyFAMA);
-                var mesa = new MesaSineWave(symbol);
-                var dailySchaffTrendCycle = new SchaffTrendCycle(symbol);
-
-                var rollingDailyHMA = HistoryTracker.Track(dailyHMA);
-                var rollingDailyHMASlope = HistoryTracker.Track(dailyHmaLSMA.Slope);
-                var rollingDailyFAMA = HistoryTracker.Track(dailyFAMA);
-                var rollingDailyFAMASlope = HistoryTracker.Track(dailyFamaLSMA.Slope);
-
-                RegisterIndicator(symbol, dailyHMA, consolidatorDaily);
-                RegisterIndicator(symbol, dailyFAMA, consolidatorDaily);
-                RegisterIndicator(symbol, mesa, consolidatorDaily);
-                RegisterIndicator(symbol, dailySchaffTrendCycle, consolidatorDaily);
-                SubscriptionManager.AddConsolidator(symbol, consolidatorDaily);
-
-                dailyHmaLSMA.Updated += (sender, args) =>
-                {
-                    var currentQuote = (QuoteBar)consolidatorDaily.Consolidated;
-                    var longTermTrend = currentQuote.Close > dailyHMA && dailyHmaLSMA > 0.001
-                                        ? Trend.Direction.Up
-                                        : currentQuote.Close < dailyHMA && dailyHmaLSMA < -0.001
-                                        ? Trend.Direction.Down
-                                        : Trend.Direction.Flat;
-
-                    if (Securities[symbol].Price > 0)
-                    {
-                        /*Plot("Daily Price", "MA", dailyHMA);
-                        Plot("Daily Price", "Slope", dailyHmaLSMA.Slope);
-                        Plot("Daily Price", "STC", dailySchaffTrendCycle);*/
-                    }
-                };
-
                 /******** SHORT TERM TRADING ********/
                 var consolidator = new QuoteBarConsolidator(TimeSpan.FromMinutes(15));
-                var schaffTrendCycle = new SchaffTrendCycle(symbol);
-                var stoch = new Stochastic(symbol, 21, 9, 9);
-                var ema = new ExponentialMovingAverage(symbol, 100);
-                var emaMA = new LeastSquaresMovingAverage(symbol, 2).Of(ema);
-
-                var rollingSchaffTrendCycle = HistoryTracker.Track(schaffTrendCycle);
-                var rollingStoch = HistoryTracker.Track(stoch);
-                var rollingEMA = HistoryTracker.Track(ema);
-                var rollingEmaSlope = HistoryTracker.Track(emaMA.Slope);
 
                 /****** ALMA Fibonacci ******/
                 var alma5 = new ArnaudLegouxMovingAverage(symbol, 5);
@@ -113,10 +68,12 @@ namespace QuantConnect.Algorithm.CSharp
                 RegisterIndicator(symbol, alma89, consolidator);
                 RegisterIndicator(symbol, alma144, consolidator);
 
-                RegisterIndicator(symbol, schaffTrendCycle, consolidator);
-                RegisterIndicator(symbol, stoch, consolidator);
-                RegisterIndicator(symbol, ema, consolidator);
                 SubscriptionManager.AddConsolidator(symbol, consolidator);
+
+                var signal = new SVMBaselineSignal(
+                    consolidator, alma5, alma8, alma13, alma21, alma34, alma55, alma89, alma144,
+                    Portfolio[symbol], Securities[symbol], this
+                );
 
                 var std = ATR(symbol, 100, MovingAverageType.DoubleExponential, _dataResolution);
 
@@ -126,25 +83,21 @@ namespace QuantConnect.Algorithm.CSharp
                 foreach (var bar in history)
                 {
                     std.Update(bar);
-                    consolidatorDaily.Update(bar);
                     consolidator.Update(bar);
                 }
 
-                var header = new string[] { "Time", "ALMA_5", "ALMA_8", "ALMA_13", "ALMA_21", "ALMA_34", "ALMA_55", "ALMA_89", "ALMA_144" };
-                Storage.CreateFile($"C:\\Users\\M\\Desktop\\{symbol}_ALMA.csv", header);
-
-                consolidator.DataConsolidated += (sender, args) =>
+                if (_store)
                 {
-                    var line = new object[] { Storage.ToUTCTimestamp(args.Time), alma5.Current.Value, alma8.Current.Value, alma13.Current.Value,
-                        alma21.Current.Value, alma34.Current.Value, alma55.Current.Value, alma89.Current.Value, alma144.Current.Value };
-                    Storage.AppendToFile($"C:\\Users\\M\\Desktop\\{symbol}_ALMA.csv", line);
-                };
+                    var header = new string[] { "Time", "ALMA_5", "ALMA_8", "ALMA_13", "ALMA_21", "ALMA_34", "ALMA_55", "ALMA_89", "ALMA_144" };
+                    Storage.CreateFile($"C:\\Users\\M\\Desktop\\{symbol}_ALMA.csv", header);
 
-                var signal = new SVMBaselineSignal(
-                    consolidatorDaily, rollingDailyHMA, rollingDailyHMASlope, rollingDailyFAMA, rollingDailyFAMASlope,
-                    consolidator, rollingSchaffTrendCycle, rollingStoch, rollingEMA, rollingEmaSlope,
-                    Portfolio[symbol], Securities[symbol], this
-                );
+                    consolidator.DataConsolidated += (sender, args) =>
+                    {
+                        var line = new object[] { Storage.ToUTCTimestamp(args.Time), alma5.Current.Value, alma8.Current.Value, alma13.Current.Value,
+                        alma21.Current.Value, alma34.Current.Value, alma55.Current.Value, alma89.Current.Value, alma144.Current.Value };
+                        Storage.AppendToFile($"C:\\Users\\M\\Desktop\\{symbol}_ALMA.csv", line);
+                    };
+                }
 
                 Securities[symbol].VolatilityModel = new AverageTrueRangeVolatilityModel(std);
                 _tradingAssets.Add(symbol,
@@ -157,6 +110,9 @@ namespace QuantConnect.Algorithm.CSharp
                     ));
 
                 //_tradingAssets[symbol].IsTradable = true;
+
+                /*var h = new object[] { "Time", "Signal", "Price" };
+                Storage.CreateFile($"C:\\Users\\M\\Desktop\\{symbol}_ALMA_Signal.csv", h);*/
             }
 
             Schedule.On(DateRules.Every(DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday),
@@ -307,6 +263,9 @@ namespace QuantConnect.Algorithm.CSharp
                     {
                         Plot("Plotter", "Stopped", ticket.AverageFillPrice);
                     }
+
+                    /*var line = new object[] { Storage.ToUTCTimestamp(orderEvent.UtcTime.Subtract(TimeSpan.FromHours(6))), ticket.Tag, ticket.AverageFillPrice };
+                    Storage.AppendToFile($"C:\\Users\\M\\Desktop\\{ticket.Symbol.Value}_ALMA_Signal.csv", line);*/
                 }
             }
         }

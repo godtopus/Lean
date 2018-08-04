@@ -95,13 +95,15 @@ namespace QuantConnect.Algorithm.CSharp
                     var hmmPrediction = 1m;// _hmmPositionSizing.PredictionRisk();
                     var quantity = (int)((int)EnterSignal.Signal * profile.Quantity * hmmPrediction);
 
-                    profile.OpenTicket = _orderMethods.MarketOrder(_symbol, quantity);
+                    profile.OpenTicket = _orderMethods.MarketOrder(_symbol, quantity, false, ((int)EnterSignal.Signal).ToString());
                     var askLimit = data.Ask.Close - (2m / 10000m);
                     var bidLimit = data.Bid.Close + (2m / 10000m);
                     var limitPrice = EnterSignal.Signal == SignalType.Long ? askLimit : bidLimit;
                     //profile.OpenTicket = _orderMethods.LimitOrder(_symbol, (int)EnterSignal.Signal * profile.Quantity, OrderUtil.RoundOrderPrices(limitPrice));
-                    profile.StopTicket = _orderMethods.StopMarketOrder(_symbol, -quantity,
-                        OrderUtil.RoundOrderPrices(_security, profile.OpenTicket.AverageFillPrice - (int)EnterSignal.Signal * profile.DeltaStopLoss));
+
+                    //var stopPrice = profile.OpenTicket.AverageFillPrice - (int)EnterSignal.Signal * profile.DeltaStopLoss;
+                    var stopPrice = data.Close - (int)EnterSignal.Signal * (20m / 10000m);
+                    profile.StopTicket = _orderMethods.StopMarketOrder(_symbol, -quantity, OrderUtil.RoundOrderPrices(_security, stopPrice));
 
                     /*Console.WriteLine("{0} {1} {2} {3}",
                         profile.OpenTicket.OrderEvents.Select((oe) => oe.Direction).First() == OrderDirection.Buy ? "Buy " : "Sell",
@@ -153,7 +155,7 @@ namespace QuantConnect.Algorithm.CSharp
                     && tradeProfile.StopTicket.Status != OrderStatus.Filled
                     && _security.Exchange.ExchangeOpen)
                 {
-                    tradeProfile.ExitTicket = _orderMethods.MarketOrder(_symbol, -(int)tradeProfile.OpenTicket.QuantityFilled);
+                    tradeProfile.ExitTicket = _orderMethods.MarketOrder(_symbol, -(int)tradeProfile.OpenTicket.QuantityFilled, false, ((int)EnterSignal.Signal).ToString());
                     //tradeProfile.ExitTicket = _orderMethods.LimitOrder(_symbol, -(int) tradeProfile.OpenTicket.QuantityFilled, data.Price);
                     tradeProfile.StopTicket.Cancel();
                     tradeProfile.IsTradeFinished = true;
@@ -197,10 +199,18 @@ namespace QuantConnect.Algorithm.CSharp
         {
             foreach (var tradeProfile in _tradeProfiles.Where(x => x.IsTradeFinished))
             {
-                var orderEvent = tradeProfile.OpenTicket.OrderEvents.Where((oe) => oe.Status == OrderStatus.Filled).First();
-                var profitLoss = (tradeProfile.OpenTicket.AverageFillPrice - tradeProfile.ExitTicket.AverageFillPrice) / tradeProfile.OpenTicket.AverageFillPrice;
-                profitLoss = (orderEvent.Direction == OrderDirection.Sell ? Math.Abs(profitLoss) : profitLoss) * 100m;
-                _hmmPositionSizing.Update(profitLoss);
+                try
+                {
+                    var orderEvent = tradeProfile.OpenTicket.OrderEvents.Where((oe) => oe.Status == OrderStatus.Filled).First();
+                    var exitPrice = tradeProfile.ExitTicket != null ? tradeProfile.ExitTicket.AverageFillPrice : tradeProfile.StopTicket.AverageFillPrice;
+                    var profitLoss = (tradeProfile.OpenTicket.AverageFillPrice - exitPrice) / tradeProfile.OpenTicket.AverageFillPrice;
+                    profitLoss = (orderEvent.Direction == OrderDirection.Sell ? Math.Abs(profitLoss) : profitLoss) * 100m;
+                    _hmmPositionSizing.Update(profitLoss);
+                }
+                catch(Exception ex)
+                {
+
+                }
             }
 
             _tradeProfiles = _tradeProfiles.Where(x => !x.IsTradeFinished).ToList();

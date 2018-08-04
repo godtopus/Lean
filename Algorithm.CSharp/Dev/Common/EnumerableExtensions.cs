@@ -41,5 +41,37 @@ namespace QuantConnect.Algorithm.CSharp.Dev.Common
                 buffer[j] = buffer[i];
             }
         }
+
+        public static IEnumerable<T[]> Combinations<T>(this IList<T> source, int n)
+        {
+            return CombinationsImpl(source, 0, n - 1);
+        }
+
+        private static IEnumerable<T[]> CombinationsImpl<T>(IList<T> argList, int argStart, int argIteration, List<int> argIndicies = null)
+        {
+            argIndicies = argIndicies ?? new List<int>();
+            for (int i = argStart; i < argList.Count; i++)
+            {
+                argIndicies.Add(i);
+                if (argIteration > 0)
+                {
+                    foreach (var array in CombinationsImpl(argList, i + 1, argIteration - 1, argIndicies))
+                    {
+                        yield return array;
+                    }
+                }
+                else
+                {
+                    var array = new T[argIndicies.Count];
+                    for (int j = 0; j < argIndicies.Count; j++)
+                    {
+                        array[j] = argList[argIndicies[j]];
+                    }
+
+                    yield return array;
+                }
+                argIndicies.RemoveAt(argIndicies.Count - 1);
+            }
+        }
     }
 }
