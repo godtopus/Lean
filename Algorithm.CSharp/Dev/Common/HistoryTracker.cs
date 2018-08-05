@@ -17,7 +17,7 @@ namespace QuantConnect.Algorithm.CSharp
         }
 
         public static RollingWindow<decimal> Track<T, R>(IndicatorBase<T> indicator, Func<IndicatorBase<T>, decimal> projection, int historyLength = 8)
-            where T : BaseData
+            where T : IBaseData
         {
             var window = new RollingWindow<decimal>(historyLength);
             indicator.Updated += (sender, args) => window.Add(projection(indicator));
@@ -25,7 +25,7 @@ namespace QuantConnect.Algorithm.CSharp
         }
 
         public static RollingWindow<T> Track<T>(DataConsolidator<T> consolidator, int historyLength = 8)
-            where T : BaseData
+            where T : IBaseDataBar
         {
             var window = new RollingWindow<T>(historyLength);
             consolidator.DataConsolidated += (sendar, args) => window.Add((T)args);

@@ -17,7 +17,7 @@ namespace QuantConnect.Indicators
         {
         }
 
-        public SchaffTrendCycle(string name, int fastPeriod, int slowPeriod, int signalPeriod, decimal factor, MovingAverageType movingAverageType) : base(name)
+        public SchaffTrendCycle(string name, int fastPeriod, int slowPeriod, int signalPeriod, decimal factor = 0.5m, MovingAverageType movingAverageType = MovingAverageType.Exponential) : base(name)
         {
             _macd = new MovingAverageConvergenceDivergence(name + "_MACD", fastPeriod, slowPeriod, signalPeriod, movingAverageType);
             _frac1 = new Stochastic(name + "Frac1", 10, 10, 10);

@@ -17,7 +17,8 @@ namespace QuantConnect.Algorithm.CSharp
 {
     public class SVMBaselineStrategy : QCAlgorithm, IRequiredOrderMethods
     {
-        public string[] Forex = { "EURUSD"/*"EURUSD", "AUDUSD", "GBPUSD", "EURGBP", "USDCAD", "NZDUSD", "USDCHF"*/ };
+        // "EURUSD", "USDCAD"
+        public string[] Forex = { "EURUSD"/*, "AUDUSD", "GBPUSD", "EURGBP", "USDCAD", "NZDUSD", "USDCHF"*/ };
 
         public IEnumerable<string> Symbols => Forex;
 
@@ -46,8 +47,18 @@ namespace QuantConnect.Algorithm.CSharp
                 //Securities[symbol].SlippageModel = new ConstantSlippageModel(0m);
                 SetBrokerageModel(BrokerageName.OandaBrokerage);
 
+                /******** LONG TERM TREND ********/
+                var dailyConsolidator = new QuoteBarConsolidator(TimeSpan.FromHours(4));
+                var alma = new ArnaudLegouxMovingAverage(symbol, 55);
+
+                RegisterIndicator(symbol, alma, dailyConsolidator);
+                SubscriptionManager.AddConsolidator(symbol, dailyConsolidator);
+
                 /******** SHORT TERM TRADING ********/
                 var consolidator = new QuoteBarConsolidator(TimeSpan.FromMinutes(15));
+                var schaffTrendCycle = new SchaffTrendCycle(symbol);
+
+                RegisterIndicator(symbol, schaffTrendCycle, consolidator);
 
                 /****** ALMA Fibonacci ******/
                 var alma5 = new ArnaudLegouxMovingAverage(symbol, 5);
@@ -71,19 +82,21 @@ namespace QuantConnect.Algorithm.CSharp
                 SubscriptionManager.AddConsolidator(symbol, consolidator);
 
                 var signal = new SVMBaselineSignal(
-                    consolidator, alma5, alma8, alma13, alma21, alma34, alma55, alma89, alma144,
+                    dailyConsolidator, alma,
+                    consolidator, alma5, alma8, alma13, alma21, alma34, alma55, alma89, alma144, schaffTrendCycle,
                     Portfolio[symbol], Securities[symbol], this
                 );
 
                 var std = ATR(symbol, 100, MovingAverageType.DoubleExponential, _dataResolution);
 
                 /******** HISTORY ********/
-                var history = History<QuoteBar>(symbol, TimeSpan.FromDays(40), _dataResolution);
+                var history = History<QuoteBar>(symbol, TimeSpan.FromDays(100), _dataResolution);
 
                 foreach (var bar in history)
                 {
                     std.Update(bar);
                     consolidator.Update(bar);
+                    dailyConsolidator.Update(bar);
                 }
 
                 if (_store)
@@ -111,8 +124,8 @@ namespace QuantConnect.Algorithm.CSharp
 
                 //_tradingAssets[symbol].IsTradable = true;
 
-                /*var h = new object[] { "Time", "Signal", "Price" };
-                Storage.CreateFile($"C:\\Users\\M\\Desktop\\{symbol}_ALMA_Signal.csv", h);*/
+                var h = new object[] { "Time", "Signal", "Price" };
+                Storage.CreateFile($"C:\\Users\\M\\Desktop\\{symbol}_ALMA_Signal.csv", h);
             }
 
             Schedule.On(DateRules.Every(DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday),
@@ -123,7 +136,7 @@ namespace QuantConnect.Algorithm.CSharp
                     {
                         foreach (var s in Symbols)
                         {
-                            _tradingAssets[s].IsTradable = true;
+                            //_tradingAssets[s].IsTradable = true;
                         }
                     }
                 });
@@ -152,6 +165,7 @@ namespace QuantConnect.Algorithm.CSharp
                     foreach (var s in Symbols)
                     {
                         _tradingAssets[s].Liquidate();
+                        //_tradingAssets[s].IsTradable = false;
                     }
                 });
 
@@ -264,8 +278,8 @@ namespace QuantConnect.Algorithm.CSharp
                         Plot("Plotter", "Stopped", ticket.AverageFillPrice);
                     }
 
-                    /*var line = new object[] { Storage.ToUTCTimestamp(orderEvent.UtcTime.Subtract(TimeSpan.FromHours(6))), ticket.Tag, ticket.AverageFillPrice };
-                    Storage.AppendToFile($"C:\\Users\\M\\Desktop\\{ticket.Symbol.Value}_ALMA_Signal.csv", line);*/
+                    var line = new object[] { Storage.ToUTCTimestamp(orderEvent.UtcTime.Subtract(TimeSpan.FromHours(6))), ticket.Tag, ticket.AverageFillPrice };
+                    Storage.AppendToFile($"C:\\Users\\M\\Desktop\\{ticket.Symbol.Value}_ALMA_Signal.csv", line);
                 }
             }
         }

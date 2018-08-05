@@ -62,11 +62,12 @@ namespace QuantConnect.Algorithm.CSharp
             foreach (var tradeProfile in _tradeProfiles)
             {
                 tradeProfile.UpdateStopLoss(data);
-                tradeProfile.CurrentPrice = data.Price;
+                tradeProfile.CurrentPrice = data.Close;
             }
 
             RemovePendingLimitOrders(data);
             MarkStopTicketsFilled();
+            RemoveAllFinishedTrades();
             EnterTradeSignal(data, isWarmingUp);
             ExitTradeSignal(data);
             RemoveAllFinishedTrades();
@@ -90,20 +91,28 @@ namespace QuantConnect.Algorithm.CSharp
 
                 profile.ExitSignal = ExitSignal.ExitSignalFactory(profile);
 
-                if (profile.Quantity > 0 && _security.Exchange.ExchangeOpen && _tradeProfiles.Count == 0)
+                if (profile.Quantity > 0 && _tradeProfiles.Count == 0)
                 {
                     var hmmPrediction = 1m;// _hmmPositionSizing.PredictionRisk();
                     var quantity = (int)((int)EnterSignal.Signal * profile.Quantity * hmmPrediction);
 
-                    profile.OpenTicket = _orderMethods.MarketOrder(_symbol, quantity, false, ((int)EnterSignal.Signal).ToString());
-                    var askLimit = data.Ask.Close - (2m / 10000m);
-                    var bidLimit = data.Bid.Close + (2m / 10000m);
+                    var askLimit = data.Ask.Close - (1m / 10000m);
+                    var bidLimit = data.Bid.Close + (1m / 10000m);
                     var limitPrice = EnterSignal.Signal == SignalType.Long ? askLimit : bidLimit;
-                    //profile.OpenTicket = _orderMethods.LimitOrder(_symbol, (int)EnterSignal.Signal * profile.Quantity, OrderUtil.RoundOrderPrices(limitPrice));
+
+                    try
+                    {
+                        profile.OpenTicket = _orderMethods.MarketOrder(_symbol, quantity, false, ((int)EnterSignal.Signal).ToString());
+                        //profile.OpenTicket = _orderMethods.LimitOrder(_symbol, quantity, OrderUtil.RoundOrderPrices(_security, limitPrice), ((int)EnterSignal.Signal).ToString());
+                        var stopPrice = data.Close - (int)EnterSignal.Signal * (2000m / 10000m);
+                        profile.StopTicket = _orderMethods.StopMarketOrder(_symbol, -quantity, OrderUtil.RoundOrderPrices(_security, stopPrice));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
 
                     //var stopPrice = profile.OpenTicket.AverageFillPrice - (int)EnterSignal.Signal * profile.DeltaStopLoss;
-                    var stopPrice = data.Close - (int)EnterSignal.Signal * (20m / 10000m);
-                    profile.StopTicket = _orderMethods.StopMarketOrder(_symbol, -quantity, OrderUtil.RoundOrderPrices(_security, stopPrice));
 
                     /*Console.WriteLine("{0} {1} {2} {3}",
                         profile.OpenTicket.OrderEvents.Select((oe) => oe.Direction).First() == OrderDirection.Buy ? "Buy " : "Sell",
@@ -150,14 +159,27 @@ namespace QuantConnect.Algorithm.CSharp
 
                 if ((tradeProfile.ExitSignal.Signal == SignalType.Exit
                     || EnterSignal.Signal == SignalType.Exit || EnterSignal.Signal == SignalType.Reverse || timedExit)
-                    /*|| (tradeProfile.OpenTicket.QuantityFilled > 0 && data.Price <= tradeProfile.StopTicket.Get(OrderField.StopPrice)
-	            		|| tradeProfile.OpenTicket.QuantityFilled < 0 && data.Price >= tradeProfile.StopTicket.Get(OrderField.StopPrice)))*/
                     && tradeProfile.StopTicket.Status != OrderStatus.Filled
                     && _security.Exchange.ExchangeOpen)
                 {
-                    tradeProfile.ExitTicket = _orderMethods.MarketOrder(_symbol, -(int)tradeProfile.OpenTicket.QuantityFilled, false, ((int)EnterSignal.Signal).ToString());
-                    //tradeProfile.ExitTicket = _orderMethods.LimitOrder(_symbol, -(int) tradeProfile.OpenTicket.QuantityFilled, data.Price);
-                    tradeProfile.StopTicket.Cancel();
+                    try {
+                        //Console.WriteLine("Quantity: {0}", tradeProfile.OpenTicket.QuantityFilled);
+                        if (tradeProfile.OpenTicket.QuantityFilled != 0)
+                        {
+                            tradeProfile.ExitTicket = _orderMethods.MarketOrder(_symbol, -(int)tradeProfile.OpenTicket.QuantityFilled, false, ((int)EnterSignal.Signal).ToString());
+                            //tradeProfile.ExitTicket = _orderMethods.LimitOrder(_symbol, -(int) tradeProfile.OpenTicket.QuantityFilled, data.Price);
+                        } else
+                        {
+                            tradeProfile.OpenTicket.Cancel();
+                        }
+
+                        tradeProfile.StopTicket.Cancel();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+
                     tradeProfile.IsTradeFinished = true;
                 }
             }
@@ -183,13 +205,21 @@ namespace QuantConnect.Algorithm.CSharp
                     var endTime = data.EndTime.ToUniversalTime();
                     var orderEventTime = orderEvent.UtcTime.Subtract(TimeSpan.FromHours(6));
                     var span = endTime.Subtract(orderEventTime);
-                    timeComparison = span.CompareTo(TimeSpan.FromMinutes(15));
+                    timeComparison = span.CompareTo(TimeSpan.FromMinutes(45));
                 }
 
                 if (tradeProfile.OpenTicket.Status != OrderStatus.Filled && timeComparison >= 0)
                 {
-                    tradeProfile.OpenTicket.Cancel();
-                    tradeProfile.StopTicket.Cancel();
+                    try
+                    {
+                        tradeProfile.OpenTicket.Cancel();
+                        tradeProfile.StopTicket.Cancel();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+
                     tradeProfile.IsTradeFinished = true;
                 }
             }
@@ -209,7 +239,7 @@ namespace QuantConnect.Algorithm.CSharp
                 }
                 catch(Exception ex)
                 {
-
+                    Console.WriteLine(ex.Message);
                 }
             }
 
