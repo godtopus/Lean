@@ -146,6 +146,7 @@
     <Compile Include="Dev\Common\IRequiredOrderMethods.cs" />
     <Compile Include="Dev\Common\ISignal.cs" />
     <Compile Include="Dev\Common\MathUtil.cs" />
+    <Compile Include="Dev\Common\MovingAverageCross.cs" />
     <Compile Include="Dev\Common\OneShotTrigger.cs" />
     <Compile Include="Dev\Common\RollingWindowExtensions.cs" />
     <Compile Include="Dev\Common\Storage.cs" />

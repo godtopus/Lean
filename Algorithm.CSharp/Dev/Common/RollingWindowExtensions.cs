@@ -1,6 +1,7 @@
 ﻿using QuantConnect.Data.Market;
 using QuantConnect.Indicators;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace QuantConnect.Algorithm.CSharp.Dev.Common
@@ -251,6 +252,19 @@ namespace QuantConnect.Algorithm.CSharp.Dev.Common
         public static bool InRangeExclusive(this RollingWindow<IndicatorDataPoint> window, decimal lowerBound, decimal upperBound, decimal tolerance = 0m)
         {
             return window[0] > lowerBound * (1 - tolerance) && window[0] < upperBound * (1 + tolerance);
+        }
+
+        public static IEnumerable<decimal> Diff(this RollingWindow<IndicatorDataPoint> window1, RollingWindow<IndicatorDataPoint> window2, int lookback = 1)
+        {
+            return window1.Take(lookback).Select((w1, index) => w1 - window2[index]);
+        }
+
+        public static IEnumerable<decimal> Diff<T>(this RollingWindow<T> window1, RollingWindow<IndicatorDataPoint> window2, Func<T, decimal> selector = null, int lookback = 1)
+            where T : IBaseDataBar
+        {
+            selector = selector ?? (x => x.Value);
+
+            return window1.Take(lookback).Select((w1, index) => selector(w1) - window2[index]);
         }
     }
 }
