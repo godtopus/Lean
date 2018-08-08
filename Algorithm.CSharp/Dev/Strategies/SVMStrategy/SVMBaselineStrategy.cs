@@ -23,8 +23,8 @@ namespace QuantConnect.Algorithm.CSharp
         public IEnumerable<string> Symbols => Forex;
 
         private decimal _maximumTradeSize = 200m;
-        private decimal _targetProfitLoss = 2m;
-        private decimal _maximumTradeRisk = 3500m;
+        private decimal _targetProfitLoss = 0.5m;
+        private decimal _maximumTradeRisk = 100m;
 
         private Resolution _dataResolution = Resolution.Minute;
         private Dictionary<string, TradingAsset> _tradingAssets = new Dictionary<string, TradingAsset>();
