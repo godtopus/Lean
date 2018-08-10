@@ -104,7 +104,7 @@ namespace QuantConnect.Algorithm.CSharp
                     {
                         profile.OpenTicket = _orderMethods.MarketOrder(_symbol, quantity, false, ((int)EnterSignal.Signal).ToString());
                         //profile.OpenTicket = _orderMethods.LimitOrder(_symbol, quantity, OrderUtil.RoundOrderPrices(_security, limitPrice), ((int)EnterSignal.Signal).ToString());
-                        var stopPrice = data.Close - (int)EnterSignal.Signal * (2000m / 10000m);
+                        var stopPrice = data.Close - (int)EnterSignal.Signal * profile.DeltaStopLoss;
                         profile.StopTicket = _orderMethods.StopMarketOrder(_symbol, -quantity, OrderUtil.RoundOrderPrices(_security, stopPrice));
                     }
                     catch (Exception ex)

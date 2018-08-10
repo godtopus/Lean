@@ -17,14 +17,26 @@ namespace QuantConnect.Algorithm.CSharp
 {
     public class SVMBaselineStrategy : QCAlgorithm, IRequiredOrderMethods
     {
-        // "EURUSD", "USDCAD"
-        public string[] Forex = { "EURUSD"/*, "AUDUSD", "GBPUSD", "EURGBP", "USDCAD", "NZDUSD", "USDCHF"*/ };
+        /*
+         * EURUSD 0.5
+         * AUDUSD 1.0
+         * EURGBP 0.3
+         * USDCAD 0.3
+         */
+        /*
+         * EURUSD 0.8
+         * AUDUSD 1.0
+         * EURGBP 0.3
+         * USDCAD 0.3
+         */
+        public string[] Forex = { "EURUSD", "AUDUSD", "EURGBP", "USDCAD"/*"EURUSD", "AUDUSD", "GBPUSD", "EURGBP", "USDCAD", "NZDUSD", "USDCHF"*/ };
+        //public string[] Forex2 = { "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "EURAUD", "EURCHF", "NZDCAD", "NZDCHF", "USDJPY" };
 
         public IEnumerable<string> Symbols => Forex;
 
         private decimal _maximumTradeSize = 200m;
-        private decimal _targetProfitLoss = 0.5m;
-        private decimal _maximumTradeRisk = 100m;
+        private decimal _targetProfitLoss = 500m;
+        private decimal _maximumTradeRisk = 2000m;
 
         private Resolution _dataResolution = Resolution.Minute;
         private Dictionary<string, TradingAsset> _tradingAssets = new Dictionary<string, TradingAsset>();
@@ -57,8 +69,10 @@ namespace QuantConnect.Algorithm.CSharp
                 /******** SHORT TERM TRADING ********/
                 var consolidator = new QuoteBarConsolidator(TimeSpan.FromMinutes(15));
                 var schaffTrendCycle = new SchaffTrendCycle(symbol);
+                var adx = new AverageDirectionalIndex(symbol, 10);
 
                 RegisterIndicator(symbol, schaffTrendCycle, consolidator);
+                RegisterIndicator(symbol, adx, consolidator);
 
                 /****** ALMA Fibonacci ******/
                 var alma5 = new ArnaudLegouxMovingAverage(symbol, 5);
@@ -83,7 +97,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                 var signal = new SVMBaselineSignal(
                     dailyConsolidator, alma,
-                    consolidator, alma5, alma8, alma13, alma21, alma34, alma55, alma89, alma144, schaffTrendCycle,
+                    consolidator, alma5, alma8, alma13, alma21, alma34, alma55, alma89, alma144, schaffTrendCycle, adx,
                     Portfolio[symbol], Securities[symbol], this
                 );
 
