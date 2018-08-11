@@ -30,12 +30,12 @@ namespace QuantConnect.Algorithm.CSharp
          * USDCAD 0.72
          */
         public string[] Forex = {
-            //"EURUSD",
-            //"AUDUSD",
+            "EURUSD",
+            "AUDUSD",
             //"GBPUSD",
-            //"EURGBP",
-            //"USDCAD",
-            "NZDUSD",
+            "EURGBP",
+            "USDCAD",
+            //"NZDUSD",
             //"USDCHF"
         };
         //public string[] Forex2 = { "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "EURAUD", "EURCHF", "NZDCAD", "NZDCHF", "USDJPY" };
@@ -43,7 +43,7 @@ namespace QuantConnect.Algorithm.CSharp
         public IEnumerable<string> Symbols => Forex;
 
         private decimal _maximumTradeSize = 200m;
-        private decimal _targetProfitLoss = 500m;
+        private decimal _targetProfitLoss = 1m;
         private decimal _maximumTradeRisk = 2000m;
 
         private Resolution _dataResolution = Resolution.Minute;

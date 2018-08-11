@@ -156,7 +156,7 @@
     <Compile Include="Dev\Common\StaticRandom.cs" />
     <Compile Include="Dev\Common\TradeProfile.cs" />
     <Compile Include="Dev\Common\TradingAsset.cs" />
-    <Compile Include="Dev\Common\Trend.cs" />
+    <Compile Include="Dev\Common\TradeType.cs" />
     <Compile Include="Dev\Extensions\QuantConnectExtensions.cs" />
     <Compile Include="Dev\Indicators\AverageDailyRange.cs" />
     <Compile Include="Dev\Indicators\RandomWalkIndex.cs" />
