@@ -24,12 +24,20 @@ namespace QuantConnect.Algorithm.CSharp
          * USDCAD 0.3
          */
         /*
-         * EURUSD 0.8
-         * AUDUSD 1.0
-         * EURGBP 0.3
-         * USDCAD 0.3
+         * EURUSD 0.68
+         * AUDUSD 0.63
+         * EURGBP 0.1
+         * USDCAD 0.72
          */
-        public string[] Forex = { "EURUSD", "AUDUSD", "EURGBP", "USDCAD"/*"EURUSD", "AUDUSD", "GBPUSD", "EURGBP", "USDCAD", "NZDUSD", "USDCHF"*/ };
+        public string[] Forex = {
+            //"EURUSD",
+            //"AUDUSD",
+            //"GBPUSD",
+            //"EURGBP",
+            //"USDCAD",
+            "NZDUSD",
+            //"USDCHF"
+        };
         //public string[] Forex2 = { "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "EURAUD", "EURCHF", "NZDCAD", "NZDCHF", "USDJPY" };
 
         public IEnumerable<string> Symbols => Forex;
@@ -150,7 +158,7 @@ namespace QuantConnect.Algorithm.CSharp
                     {
                         foreach (var s in Symbols)
                         {
-                            //_tradingAssets[s].IsTradable = true;
+                            _tradingAssets[s].IsTradable = true;
                         }
                     }
                 });
@@ -174,11 +182,11 @@ namespace QuantConnect.Algorithm.CSharp
                 });
 
             Schedule.On(DateRules.Every(DayOfWeek.Friday),
-                TimeRules.BeforeMarketClose(Symbols.First(), 60), () =>
+                TimeRules.BeforeMarketClose(Symbols.First(), 180), () =>
                 {
                     foreach (var s in Symbols)
                     {
-                        _tradingAssets[s].Liquidate();
+                        //_tradingAssets[s].Liquidate();
                         //_tradingAssets[s].IsTradable = false;
                     }
                 });

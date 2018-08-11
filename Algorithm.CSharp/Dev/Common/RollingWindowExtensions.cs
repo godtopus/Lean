@@ -236,22 +236,46 @@ namespace QuantConnect.Algorithm.CSharp.Dev.Common
 
         public static bool InRangeInclusive(this RollingWindow<decimal> window, decimal lowerBound, decimal upperBound, decimal tolerance = 0m)
         {
-            return window[0] >= lowerBound * (1 - tolerance) && window[0] <= upperBound * (1 + tolerance);
+            return InRangeInclusive(window[0], lowerBound, upperBound, tolerance);
         }
 
         public static bool InRangeInclusive(this RollingWindow<IndicatorDataPoint> window, decimal lowerBound, decimal upperBound, decimal tolerance = 0m)
         {
-            return window[0] >= lowerBound * (1 - tolerance) && window[0] <= upperBound * (1 + tolerance);
+            return InRangeInclusive(window[0].Value, lowerBound, upperBound, tolerance);
+        }
+
+        /*public static bool InRangeInclusive<T>(this RollingWindow<T> window, decimal lowerBound, decimal upperBound, Func<T, decimal> selector = null, decimal tolerance = 0m)
+            where T : IBaseDataBar
+        {
+            selector = selector ?? (x => x.Value);
+            return InRangeInclusive(selector(window[0]), lowerBound, upperBound, tolerance);
+        }*/
+
+        private static bool InRangeInclusive(decimal w, decimal lowerBound, decimal upperBound, decimal tolerance = 0m)
+        {
+            return w >= lowerBound * (1 - tolerance) && w <= upperBound * (1 + tolerance);
         }
 
         public static bool InRangeExclusive(this RollingWindow<decimal> window, decimal lowerBound, decimal upperBound, decimal tolerance = 0m)
         {
-            return window[0] > lowerBound * (1 - tolerance) && window[0] < upperBound * (1 + tolerance);
+            return InRangeExclusive(window[0], lowerBound, upperBound, tolerance);
         }
 
         public static bool InRangeExclusive(this RollingWindow<IndicatorDataPoint> window, decimal lowerBound, decimal upperBound, decimal tolerance = 0m)
         {
-            return window[0] > lowerBound * (1 - tolerance) && window[0] < upperBound * (1 + tolerance);
+            return InRangeExclusive(window[0].Value, lowerBound, upperBound, tolerance);
+        }
+
+        /*public static bool InRangeExclusive<T>(this RollingWindow<T> window, decimal lowerBound, decimal upperBound, Func<T, decimal> selector = null, decimal tolerance = 0m)
+            where T : IBaseDataBar
+        {
+            selector = selector ?? (x => x.Value);
+            return InRangeExclusive(selector(window[0]), lowerBound, upperBound, tolerance);
+        }*/
+
+        private static bool InRangeExclusive(decimal w, decimal lowerBound, decimal upperBound, decimal tolerance = 0m)
+        {
+            return w > lowerBound * (1 - tolerance) && w < upperBound * (1 + tolerance);
         }
 
         public static IEnumerable<decimal> Diff(this RollingWindow<IndicatorDataPoint> window1, RollingWindow<IndicatorDataPoint> window2, int lookback = 1)

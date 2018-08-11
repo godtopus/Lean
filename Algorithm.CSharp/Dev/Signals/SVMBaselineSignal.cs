@@ -168,13 +168,15 @@ namespace QuantConnect.Algorithm.CSharp
                 var shortExit = Signal == SignalType.Short
                                 && (maSignals.Where((s) => s == SignalType.Long).Count() > 4);*/
                 var dailyQuote = (QuoteBar)_dailyConsolidator.Consolidated;
-                var longCondition = (_maCross.CrossAbove(6, (0.7m / 10000m)) && _alma8 < _alma144 && _alma21 < _alma144)
+                var longCondition = _maCross.CrossAbove(6, 0.7m / 10000m)
+                                    //&& !_maCross.CrossBelow(10)
                                     //&& args.Close > args.Open
-                                    && _adx >= 25
+                                    && _rollingAlma8.InRangeExclusive(_alma21, _alma144)
+                                    && _adx >= 23
                                     //&& (_alma144 - _alma8) * 10000m > 10m
                                     //&& _rollingAlma21.Diff(_rollingAlma144, 100).Skip(5).TakeWhile((d) => d < 0).Count() > 5
-                                    && _rollingAlma8.Rising(1, (0.25m / 10000m) * _alma8)
-                                    && _rollingAlma21.Rising(1, (0.25m / 10000m) * _alma21);
+                                    && _rollingAlma8.Rising(1, 1m / 10000m)
+                                    && _rollingAlma21.Rising(1, 0.1m / 10000m);
                                     //&& !(args.Close < dailyQuote.Open)
                                     //&& _rollingAlma34.Rising(2)
                                     //&& (args.Close - _alma144) * 10000m < 60m
@@ -183,13 +185,15 @@ namespace QuantConnect.Algorithm.CSharp
                                     //&& _alma8 > _alma21 + (0.25m / 10000m)
                                     //&& _rollingSchaffTrendCycle.InRangeExclusive(50m, 100m) && _rollingSchaffTrendCycle.CrossAbove(1m, 5) && _rollingSchaffTrendCycle.Rising();
 
-                var shortCondition = (_maCross.CrossBelow(6, (0.7m / 10000m)) && _alma8 > _alma144 && _alma21 > _alma144)
+                var shortCondition = _maCross.CrossBelow(6, 0.7m / 10000m)
+                                    //&& !_maCross.CrossAbove(10)
                                     //&& args.Close < args.Open
-                                    && _adx >= 25
+                                    && _adx >= 23
+                                    && _rollingAlma8.InRangeExclusive(_alma144, _alma21)
                                     //&& (_alma8 - _alma144) * 10000m > 10m
                                     //&& _rollingAlma21.Diff(_rollingAlma144, 100).Skip(5).TakeWhile((d) => d > 0).Count() > 5
-                                    && _rollingAlma8.Falling(1, (0.25m / 10000m) * _alma8)
-                                    && _rollingAlma21.Falling(1, (0.25m / 10000m) * _alma21);
+                                    && _rollingAlma8.Falling(1, 1m / 10000m)
+                                    && _rollingAlma21.Falling(1, 0.1m / 10000m);
                                     //&& !(args.Close > dailyQuote.Close)
                                     //&& _rollingAlma34.Falling(2)
                                     //&& (_alma144 - args.Close) * 10000m < 60m
@@ -198,11 +202,11 @@ namespace QuantConnect.Algorithm.CSharp
                                     //&& _alma8 < _alma21 - (0.25m / 10000m)
                                     //&& _rollingSchaffTrendCycle.InRangeExclusive(0m, 50m) && _rollingSchaffTrendCycle.CrossBelow(99m, 5) && _rollingSchaffTrendCycle.Falling();
 
-                var longExit = Signal == SignalType.Long && (_rollingAlma34.CrossBelow(_rollingAlma144, 7, (0.05m / 10000m) * _alma144));
+                var longExit = Signal == SignalType.Long && (_rollingAlma34.CrossBelow(_rollingAlma144, 7, 0.1m / 10000m));
                     //_rollingConsolidator.Diff(_rollingAlma144, Field.Close, 8).All((d) => d < 5m)
                                 /*&& (((_rollingAlma8.CrossBelow(_rollingAlma21, 5, 0.1m / 10000m) && _rollingAlma21.Falling())
                                     || (_rollingConsolidator.CrossBelow(_alma144.Current.Value) && _rollingAlma21.Falling())));*/
-                var shortExit = Signal == SignalType.Short && ( _rollingAlma34.CrossAbove(_rollingAlma144, 7, (0.05m / 10000m) * _alma144));
+                var shortExit = Signal == SignalType.Short && ( _rollingAlma34.CrossAbove(_rollingAlma144, 7, 0.1m / 10000m));
                     //_rollingConsolidator.Diff(_rollingAlma144, Field.Close, 8).All((d) => d > 5m)
                                 /*&& (((_rollingAlma8.CrossAbove(_rollingAlma21, 5, 0.1m / 10000m) && _rollingAlma21.Rising())
                                     || (_rollingConsolidator.CrossAbove(_alma144.Current.Value) && _rollingAlma21.Rising())));*/
