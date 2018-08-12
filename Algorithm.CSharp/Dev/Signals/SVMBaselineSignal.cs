@@ -15,7 +15,7 @@ namespace QuantConnect.Algorithm.CSharp
     public class SVMBaselineSignal : ISignal
     {
         private QuoteBarConsolidator _dailyConsolidator;
-        private ArnaudLegouxMovingAverage _dailyALMA;
+        private ExponentialMovingAverage _dailyALMA;
         private RollingWindow<IndicatorDataPoint> _rollingDailyAlma;
 
         private QuoteBarConsolidator _shortTermConsolidator;
@@ -25,6 +25,7 @@ namespace QuantConnect.Algorithm.CSharp
         private SchaffTrendCycle _schaffTrendCycle;
         private RollingWindow<IndicatorDataPoint> _rollingSchaffTrendCycle;
 
+        private AverageTrueRange _atr;
         private AverageDirectionalIndex _adx;
 
         private ArnaudLegouxMovingAverage _alma5;
@@ -69,7 +70,7 @@ namespace QuantConnect.Algorithm.CSharp
 
         public SVMBaselineSignal(
             QuoteBarConsolidator dailyConsolidator,
-            ArnaudLegouxMovingAverage dailyALMA,
+            ExponentialMovingAverage dailyALMA,
             QuoteBarConsolidator shortTermConsolidator,
             ArnaudLegouxMovingAverage alma5,
             ArnaudLegouxMovingAverage alma8,
@@ -80,6 +81,7 @@ namespace QuantConnect.Algorithm.CSharp
             ArnaudLegouxMovingAverage alma89,
             ArnaudLegouxMovingAverage alma144,
             SchaffTrendCycle schaffTrendCycle,
+            AverageTrueRange atr,
             AverageDirectionalIndex adx,
             SecurityHolding securityHolding,
             Security security,
@@ -95,6 +97,7 @@ namespace QuantConnect.Algorithm.CSharp
             _schaffTrendCycle = schaffTrendCycle;
             _rollingSchaffTrendCycle = HistoryTracker.Track(_schaffTrendCycle);
 
+            _atr = atr;
             _adx = adx;
 
             _alma5 = alma5;
@@ -175,68 +178,46 @@ namespace QuantConnect.Algorithm.CSharp
                 var longMeanReversion = _maCross.CrossAbove(6, 0.7m / 10000m)
                                         && _rollingAlma8.InRangeExclusive(_alma21, _alma144)
                                         && _adx >= 23
-                                        && _rollingAlma144.Diff(_rollingAlma21, 10).Sum() * 10000m > 20m
+                                        //&& _atr > 7m / 10000m
+                                        //&& _rollingAlma144.Diff(_rollingAlma21, 10).Average() * 10000m >= 15m
                                         && _rollingAlma8.Rising(1, 1m / 10000m)
                                         && _rollingAlma21.Rising(1, 0.1m / 10000m)
                                         ? TradeType.Direction.MeanRevertingUp
                                         : TradeType.Direction.Flat;
 
-                var longTrend = _maCross.DoubleCrossAbove(6, 0.5m / 10000m)
+                var longTrend = _maCross.DoubleCrossAbove(6, 0.4m / 10000m)
                                 //&& _adx < 20
                                 //&& _rollingAlma144.Diff(_rollingAlma21, 10).Sum() * 10000m > 5m
-                                && _rollingAlma8.Rising(1, 1m / 10000m)
-                                && _rollingAlma21.Rising(1, 0.1m / 10000m)
-                                && _rollingAlma144.Rising(2)
+                                && _rollingAlma8.Rising(2, 1m / 10000m)
+                                && _rollingAlma21.Rising(2, 0.1m / 10000m)
+                                && _rollingAlma55.Rising(2)
+                                && args.Close > _alma144
                                 ? TradeType.Direction.TrendUp
                                 : TradeType.Direction.Flat;
 
-                var longCondition = longMeanReversion == TradeType.Direction.MeanRevertingUp || longTrend == TradeType.Direction.TrendUp;
-                                    //&& _alma89 < _alma144
-                                    //&& !_maCross.DoubleCrossBelow(10)
-                                    //&& args.Close > args.Open
-                                    //&& _adx >= 27 NZDUSD
-                                    //&& (_alma144 - _alma8) * 10000m > 10m
-                                    //&& _rollingAlma21.Diff(_rollingAlma144, 100).Skip(5).TakeWhile((d) => d < 0).Count() > 5
-                                    //&& !(args.Close < dailyQuote.Open)
-                                    //&& _rollingAlma34.Rising(2)
-                                    //&& (args.Close - _alma144) * 10000m < 60m
-                                    //&& _rollingAlma5.CrossAbove(_rollingAlma13, 8, 0.1m / 10000m)
-                                    //&& _rollingAlma144.Rising(3)
-                                    //&& _alma8 > _alma21 + (0.25m / 10000m)
-                                    //&& _rollingSchaffTrendCycle.InRangeExclusive(50m, 100m) && _rollingSchaffTrendCycle.CrossAbove(1m, 5) && _rollingSchaffTrendCycle.Rising();
+                var longCondition = args.Close > _dailyALMA && (longMeanReversion == TradeType.Direction.MeanRevertingUp || longTrend == TradeType.Direction.TrendUp);
 
                 var shortMeanReversion = _maCross.CrossBelow(6, 0.6m / 10000m)
                                             && _rollingAlma8.InRangeExclusive(_alma144, _alma21)
                                             && _adx >= 23
-                                            && _rollingAlma21.Diff(_rollingAlma144, 10).Sum() * 10000m > 20m
+                                            //&& _atr > 7m / 10000m
+                                            //&& _rollingAlma21.Diff(_rollingAlma144, 10).Average() * 10000m >= 15m
                                             && _rollingAlma8.Falling(1, 1m / 10000m)
                                             && _rollingAlma21.Falling(1, 0.1m / 10000m)
                                             ? TradeType.Direction.MeanRevertingDown
                                             : TradeType.Direction.Flat;
 
-                var shortTrend = _maCross.DoubleCrossBelow(6, 0.5m / 10000m)
+                var shortTrend = _maCross.DoubleCrossBelow(6, 0.4m / 10000m)
                                     //&& _adx < 20
                                     //&& _rollingAlma21.Diff(_rollingAlma144, 10).Sum() * 10000m > 5m
-                                    && _rollingAlma8.Falling(1, 1m / 10000m)
-                                    && _rollingAlma21.Falling(1, 0.1m / 10000m)
-                                    && _rollingAlma144.Falling(2)
+                                    && _rollingAlma8.Falling(2, 1m / 10000m)
+                                    && _rollingAlma21.Falling(2, 0.1m / 10000m)
+                                    && _rollingAlma55.Falling(2)
+                                    && args.Close < _alma144
                                     ? TradeType.Direction.TrendDown
                                     : TradeType.Direction.Flat;
 
-                var shortCondition = shortMeanReversion == TradeType.Direction.MeanRevertingDown || shortTrend == TradeType.Direction.TrendDown;
-                                    //&& _alma89 > _alma144
-                                    //&& !_maCross.DoubleCrossAbove(10)
-                                    //&& args.Close < args.Open
-                                    //&& _adx >= 27 NZDUSD
-                                    //&& (_alma8 - _alma144) * 10000m > 10m
-                                    //&& _rollingAlma21.Diff(_rollingAlma144, 100).Skip(5).TakeWhile((d) => d > 0).Count() > 5
-                                    //&& !(args.Close > dailyQuote.Close)
-                                    //&& _rollingAlma34.Falling(2)
-                                    //&& (_alma144 - args.Close) * 10000m < 60m
-                                    //&& _rollingAlma5.CrossBelow(_rollingAlma13, 8, 0.1m / 10000m)
-                                    //&& _rollingAlma144.Falling(3)
-                                    //&& _alma8 < _alma21 - (0.25m / 10000m)
-                                    //&& _rollingSchaffTrendCycle.InRangeExclusive(0m, 50m) && _rollingSchaffTrendCycle.CrossBelow(99m, 5) && _rollingSchaffTrendCycle.Falling();
+                var shortCondition = args.Close < _dailyALMA && (shortMeanReversion == TradeType.Direction.MeanRevertingDown || shortTrend == TradeType.Direction.TrendDown);
 
                 var longExit = Signal == SignalType.Long &&
                     ((shortTrend == TradeType.Direction.TrendDown

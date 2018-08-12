@@ -31,10 +31,10 @@ namespace QuantConnect.Algorithm.CSharp
          */
         public string[] Forex = {
             "EURUSD",
-            "AUDUSD",
+            //"AUDUSD",
             //"GBPUSD",
-            "EURGBP",
-            "USDCAD",
+            //"EURGBP",
+            //"USDCAD",
             //"NZDUSD",
             //"USDCHF"
         };
@@ -68,8 +68,8 @@ namespace QuantConnect.Algorithm.CSharp
                 SetBrokerageModel(BrokerageName.OandaBrokerage);
 
                 /******** LONG TERM TREND ********/
-                var dailyConsolidator = new QuoteBarConsolidator(TimeSpan.FromHours(4));
-                var alma = new ArnaudLegouxMovingAverage(symbol, 55);
+                var dailyConsolidator = new QuoteBarConsolidator(TimeSpan.FromDays(1));
+                var alma = new ExponentialMovingAverage(symbol, 10);
 
                 RegisterIndicator(symbol, alma, dailyConsolidator);
                 SubscriptionManager.AddConsolidator(symbol, dailyConsolidator);
@@ -77,9 +77,11 @@ namespace QuantConnect.Algorithm.CSharp
                 /******** SHORT TERM TRADING ********/
                 var consolidator = new QuoteBarConsolidator(TimeSpan.FromMinutes(15));
                 var schaffTrendCycle = new SchaffTrendCycle(symbol);
+                var atr = new AverageTrueRange(symbol, 10);
                 var adx = new AverageDirectionalIndex(symbol, 10);
 
                 RegisterIndicator(symbol, schaffTrendCycle, consolidator);
+                RegisterIndicator(symbol, atr, consolidator);
                 RegisterIndicator(symbol, adx, consolidator);
 
                 /****** ALMA Fibonacci ******/
@@ -105,7 +107,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                 var signal = new SVMBaselineSignal(
                     dailyConsolidator, alma,
-                    consolidator, alma5, alma8, alma13, alma21, alma34, alma55, alma89, alma144, schaffTrendCycle, adx,
+                    consolidator, alma5, alma8, alma13, alma21, alma34, alma55, alma89, alma144, schaffTrendCycle, atr, adx,
                     Portfolio[symbol], Securities[symbol], this
                 );
 
@@ -287,7 +289,7 @@ namespace QuantConnect.Algorithm.CSharp
                     //Plot("Plotter", "Price", Securities[symbol].Price);
                     //Plot("Plotter", "STO", _stoch[symbol]);
 
-                    if ((ticket.OrderType == OrderType.Market || ticket.OrderType == OrderType.Limit) && orderEvent.Direction == OrderDirection.Buy)
+                    /*if ((ticket.OrderType == OrderType.Market || ticket.OrderType == OrderType.Limit) && orderEvent.Direction == OrderDirection.Buy)
                     {
                         Plot("Plotter", "Buy", ticket.AverageFillPrice);
                     }
@@ -298,7 +300,7 @@ namespace QuantConnect.Algorithm.CSharp
                     else if (ticket.OrderType == OrderType.StopMarket)
                     {
                         Plot("Plotter", "Stopped", ticket.AverageFillPrice);
-                    }
+                    }*/
 
                     var line = new object[] { Storage.ToUTCTimestamp(orderEvent.UtcTime.Subtract(TimeSpan.FromHours(6))), ticket.Tag, ticket.AverageFillPrice };
                     Storage.AppendToFile($"C:\\Users\\M\\Desktop\\{ticket.Symbol.Value}_ALMA_Signal.csv", line);
